@@ -4495,37 +4495,36 @@ function Bracket.Window(Self, Window)
 	-- RIGHT: Background section
 	local _BgSection = _SettingsTab:Section({ Name = "Background", Side = "Right" })
 
+	-- Cache the actual ImageLabel instance directly to avoid any proxy chain issues
+	local _WinBg = Window.Instance.Background
+
 	_BgSection:Colorpicker({
 		Name     = "Background Color",
 		Flag     = "_cloudy_bg_color",
 		Value    = { 0, 0, 0, 0, false },
 		Callback = function(Value, Color)
-			Window.Background.ImageColor3 = Color
+			_WinBg.ImageColor3 = Color
 		end,
 	})
 
-	_BgSection:Textbox({
+	local _BgImageTextbox = _BgSection:Textbox({
 		Name        = "Background Image ID",
 		Flag        = "_cloudy_bg_image",
 		Placeholder = "rbxassetid://...",
-		Callback    = function(Value, EnterPressed)
-			if Value ~= "" then
-				Window.Background.Image = Value
-			end
-		end,
 	})
-
-	local function _ApplyBgPreset(presetName)
-		local presets = {
-			["Default"]   = "rbxassetid://5553946656",
-			["Dark Grid"] = "rbxassetid://6968231645",
-			["Dots"]      = "rbxassetid://7148082303",
-			["Waves"]     = "rbxassetid://3339406738",
-		}
-		if presets[presetName] then
-			Window.Background.Image = presets[presetName]
+	_BgImageTextbox.Instance.Background.Input.FocusLost:Connect(function()
+		local val = _BgImageTextbox.Instance.Background.Input.Text
+		if val ~= "" then
+			_WinBg.Image = val
 		end
-	end
+	end)
+
+	local _BgPresets = {
+		["Default"]   = "rbxassetid://5553946656",
+		["Dark Grid"] = "rbxassetid://6968231645",
+		["Dots"]      = "rbxassetid://7148082303",
+		["Waves"]     = "rbxassetid://3339406738",
+	}
 
 	_BgSection:Dropdown({
 		Name = "Background Preset",
@@ -4535,22 +4534,30 @@ function Bracket.Window(Self, Window)
 				Name     = "Default",
 				Mode     = "Button",
 				Value    = true,
-				Callback = function() _ApplyBgPreset("Default") end,
+				Callback = function()
+					_WinBg.Image = _BgPresets["Default"]
+				end,
 			},
 			{
 				Name     = "Dark Grid",
 				Mode     = "Button",
-				Callback = function() _ApplyBgPreset("Dark Grid") end,
+				Callback = function()
+					_WinBg.Image = _BgPresets["Dark Grid"]
+				end,
 			},
 			{
 				Name     = "Dots",
 				Mode     = "Button",
-				Callback = function() _ApplyBgPreset("Dots") end,
+				Callback = function()
+					_WinBg.Image = _BgPresets["Dots"]
+				end,
 			},
 			{
 				Name     = "Waves",
 				Mode     = "Button",
-				Callback = function() _ApplyBgPreset("Waves") end,
+				Callback = function()
+					_WinBg.Image = _BgPresets["Waves"]
+				end,
 			},
 		},
 	})

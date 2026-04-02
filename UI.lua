@@ -835,7 +835,7 @@ Bracket.Instances = {
 		Background.BorderSizePixel = 0
 		Background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		Background.ScaleType = Enum.ScaleType.Tile
-		Background.ImageColor3 = Color3.fromRGB(0, 0, 0)
+		Background.ImageColor3 = Color3.fromRGB(255, 255, 255)
 		Background.TileSize = UDim2.new(0, 74, 0, 74)
 		Background.Image = "rbxassetid://5553946656"
 		Background.Parent = Window
@@ -4501,22 +4501,32 @@ function Bracket.Window(Self, Window)
 	_BgSection:Colorpicker({
 		Name     = "Background Color",
 		Flag     = "_cloudy_bg_color",
-		Value    = { 0, 0, 0, 0, false },
+		Value    = { 0, 0, 1, 0, false },
 		Callback = function(Value, Color)
 			_WinBg.ImageColor3 = Color
+			_WinBg.ImageTransparency = Value[4]
 		end,
 	})
 
 	local _BgImageTextbox = _BgSection:Textbox({
 		Name        = "Background Image ID",
 		Flag        = "_cloudy_bg_image",
-		Placeholder = "rbxassetid://...",
+		Placeholder = "e.g. 5553946656 or rbxassetid://...",
 	})
-	_BgImageTextbox.Instance.Background.Input.FocusLost:Connect(function()
-		local val = _BgImageTextbox.Instance.Background.Input.Text
-		if val ~= "" then
-			_WinBg.Image = val
+	local function _ApplyBgImage(raw)
+		if not raw or raw == "" then return end
+		raw = raw:match("^%s*(.-)%s*$") -- trim whitespace
+		-- accept plain number or rbxassetid://number
+		local id = raw:match("rbxassetid://(%d+)") or raw:match("^(%d+)$")
+		if id then
+			_WinBg.Image = "rbxassetid://" .. id
+		else
+			-- pass through as-is (full asset string)
+			_WinBg.Image = raw
 		end
+	end
+	_BgImageTextbox.Instance.Background.Input.FocusLost:Connect(function()
+		_ApplyBgImage(_BgImageTextbox.Instance.Background.Input.Text)
 	end)
 
 	local _BgPresets = {
@@ -4588,7 +4598,7 @@ function Bracket.Window(Self, Window)
 	_MiscSection:Button({
 		Name     = "Copy Website Url",
 		Callback = function()
-			setclipboard("https://getcloudy.gg")
+			setclipboard("https://getcloudy.sell.app/")
 		end,
 	})
 
@@ -5039,7 +5049,19 @@ if Bracket.IsLocal then
 	end
 end
 
--- // Initialize
+-- // Initialize: destroy any pre-existing Bracket ScreenGui to prevent duplicates
+do
+	local function _destroyOld(parent)
+		if not parent then return end
+		for _, child in ipairs(parent:GetChildren()) do
+			if child:IsA("ScreenGui") and child.Name:sub(1, 7) == "Bracket" then
+				child:Destroy()
+			end
+		end
+	end
+	pcall(_destroyOld, CoreGui)
+	pcall(_destroyOld, LocalPlayer and LocalPlayer:FindFirstChildOfClass("PlayerGui"))
+end
 Bracket.Screen = Bracket.Templates.Screen()
 Bracket.Utilities.NoOverwriteProxify(Bracket.Flags, Bracket.Elements)
 

@@ -171,70 +171,64 @@ Bracket.Utilities = {
 		return TextService:GetTextSize(Text, Size.Y, Font, Vector2.new(Size.X, 1e6))
 	end,
 	MakeDraggable = function(Dragger, Object, OnChange, OnEnd)
-		local Position, StartPosition = nil, nil
+		local Dragging = false
+		local DragStart = nil
+		local ObjectStart = nil
 
 		Dragger.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				Position = Vector2.new(Input.Position.X, Input.Position.Y)
-				if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-					Position = UserInputService:GetMouseLocation()
-				end
-				StartPosition = Object.AbsolutePosition
+				Dragging = true
+				DragStart = Vector2.new(Input.Position.X, Input.Position.Y)
+				ObjectStart = Object.Position
+				-- Detect input end even if finger/cursor leaves the element
+				Input.Changed:Connect(function()
+					if Input.UserInputState == Enum.UserInputState.End then
+						Dragging = false
+						if OnEnd then OnEnd(Object.Position, ObjectStart) end
+					end
+				end)
 			end
 		end)
 		UserInputService.InputChanged:Connect(function(Input)
-			if StartPosition and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
-				local Mouse = Input.UserInputType == Enum.UserInputType.Touch
-					and Vector2.new(Input.Position.X, Input.Position.Y)
-					or UserInputService:GetMouseLocation()
-				local Delta = Mouse - Position
-				Position = Mouse
-
-				Delta = Object.Position + UDim2.fromOffset(Delta.X, Delta.Y)
-				if OnChange then OnChange(Delta) end
-			end
-		end)
-		Dragger.InputEnded:Connect(function(Input)
-			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				if OnEnd then OnEnd(Object.Position, StartPosition) end
-				Position, StartPosition = nil, nil
-			end
+			if not Dragging then return end
+			if Input.UserInputType ~= Enum.UserInputType.MouseMovement and Input.UserInputType ~= Enum.UserInputType.Touch then return end
+			local Current = Vector2.new(Input.Position.X, Input.Position.Y)
+			local Delta = Current - DragStart
+			local NewPos = UDim2.new(
+				ObjectStart.X.Scale,
+				ObjectStart.X.Offset + Delta.X,
+				ObjectStart.Y.Scale,
+				ObjectStart.Y.Offset + Delta.Y
+			)
+			if OnChange then OnChange(NewPos) end
 		end)
 	end,
 	MakeResizeable = function(Dragger, Object, MinSize, MaxSize, OnChange, OnEnd)
-		local Position, StartSize = nil, nil
+		local Resizing = false
+		local DragStart = nil
+		local StartSize = nil
 
 		Dragger.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				Position = Vector2.new(Input.Position.X, Input.Position.Y)
-				if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-					Position = UserInputService:GetMouseLocation()
-				end
+				Resizing = true
+				DragStart = Vector2.new(Input.Position.X, Input.Position.Y)
 				StartSize = Object.AbsoluteSize
+				Input.Changed:Connect(function()
+					if Input.UserInputState == Enum.UserInputState.End then
+						Resizing = false
+						if OnEnd then OnEnd(Object.Size, StartSize) end
+					end
+				end)
 			end
 		end)
 		UserInputService.InputChanged:Connect(function(Input)
-			if StartSize and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
-				local Mouse = Input.UserInputType == Enum.UserInputType.Touch
-					and Vector2.new(Input.Position.X, Input.Position.Y)
-					or UserInputService:GetMouseLocation()
-				local Delta = Mouse - Position
-				local Size = StartSize + Delta
-
-				local SizeX = math.max(MinSize.X, Size.X)
-				-- SizeX = math.min(MaxSize.X, Size.X)
-
-				local SizeY = math.max(MinSize.Y, Size.Y)
-				-- SizeY = math.min(MaxSize.Y, Size.Y)
-
-				OnChange(UDim2.fromOffset(SizeX, SizeY))
-			end
-		end)
-		Dragger.InputEnded:Connect(function(Input)
-			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				if OnEnd then OnEnd(Object.Size, StartSize) end
-				Position, StartSize = nil, nil
-			end
+			if not Resizing then return end
+			if Input.UserInputType ~= Enum.UserInputType.MouseMovement and Input.UserInputType ~= Enum.UserInputType.Touch then return end
+			local Current = Vector2.new(Input.Position.X, Input.Position.Y)
+			local Delta = Current - DragStart
+			local NewW = math.max(MinSize.X, StartSize.X + Delta.X)
+			local NewH = math.max(MinSize.Y, StartSize.Y + Delta.Y)
+			OnChange(UDim2.fromOffset(NewW, NewH))
 		end)
 	end,
 	ClosePopUps = function()
@@ -363,12 +357,14 @@ Bracket.Utilities = {
 		if not UserInputService.TouchEnabled then
 			return UDim2.new(0, 496, 0, 496), UDim2.new(0.5, -248, 0.5, -248)
 		elseif ViewportSize.X < 700 or ViewportSize.Y < 700 then
-			local W = math.min(math.floor(ViewportSize.X * 0.94), 360)
-			local H = math.min(math.floor(ViewportSize.Y * 0.80), 430)
+			-- Phone: slightly narrower, comfortable height
+			local W = math.min(math.floor(ViewportSize.X * 0.82), 310)
+			local H = math.min(math.floor(ViewportSize.Y * 0.78), 420)
 			return UDim2.new(0, W, 0, H), UDim2.new(0.5, -W / 2, 0.5, -H / 2)
 		else
-			local W = math.min(math.floor(ViewportSize.X * 0.72), 560)
-			local H = math.min(math.floor(ViewportSize.Y * 0.72), 560)
+			-- Tablet
+			local W = math.min(math.floor(ViewportSize.X * 0.68), 520)
+			local H = math.min(math.floor(ViewportSize.Y * 0.70), 520)
 			return UDim2.new(0, W, 0, H), UDim2.new(0.5, -W / 2, 0.5, -H / 2)
 		end
 	end,

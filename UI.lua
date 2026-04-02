@@ -747,7 +747,16 @@ Bracket.Instances = {
 		Window.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Window.Position = UDim2.new(0.5, -248, 0.5, -248)
 		Window.BorderSizePixel = 2
-		Window.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
+		Window.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+
+		local WindowGradient = Instance.new("UIGradient")
+		WindowGradient.Name = "WindowGradient"
+		WindowGradient.Rotation = 135
+		WindowGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 28, 36)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 22)),
+		})
+		WindowGradient.Parent = Window
 
 		local Stroke = Instance.new("UIStroke")
 		Stroke.Name = "Stroke"
@@ -762,8 +771,17 @@ Bracket.Instances = {
 		Topbar.Size = UDim2.new(1, 0, 0, 18)
 		Topbar.BorderColor3 = Color3.fromRGB(63, 63, 63)
 		Topbar.Position = UDim2.new(0.5, 0, 0, 0)
-		Topbar.BackgroundColor3 = Color3.fromRGB(31, 31, 31)
+		Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
 		Topbar.Parent = Window
+
+		local TopbarGrad = Instance.new("UIGradient")
+		TopbarGrad.Name = "TopbarGrad"
+		TopbarGrad.Rotation = 90
+		TopbarGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 52)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 22, 28)),
+		})
+		TopbarGrad.Parent = Topbar
 
 		local Title = Instance.new("TextLabel")
 		Title.Name = "Title"
@@ -789,7 +807,7 @@ Bracket.Instances = {
 		local ToggleBtn = Instance.new("TextButton")
 		ToggleBtn.Name = "ToggleBtn"
 		ToggleBtn.AnchorPoint = Vector2.new(1, 0.5)
-		ToggleBtn.Size = UDim2.new(0, 30, 0, 12)
+		ToggleBtn.Size = UDim2.new(1, -8, 0, 12)
 		ToggleBtn.BorderSizePixel = 0
 		ToggleBtn.Position = UDim2.new(1, -4, 0.5, 0)
 		ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1345,7 +1363,7 @@ Bracket.Instances = {
 	Slider = function()
 		local Slider = Instance.new("TextButton")
 		Slider.Name = "Slider"
-		Slider.Size = UDim2.new(1, 0, 0, 14)
+		Slider.Size = UDim2.new(1, 0, 0, 26)
 		Slider.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Slider.BackgroundTransparency = 1
 		Slider.BorderSizePixel = 0
@@ -1359,16 +1377,16 @@ Bracket.Instances = {
 		local Title = Instance.new("TextLabel")
 		Title.Name = "Title"
 		Title.ZIndex = 2
-		Title.Size = UDim2.new(1, -24, 1, 0)
+		Title.Size = UDim2.new(1, -40, 0, 13)
 		Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Title.BackgroundTransparency = 1
-		Title.Position = UDim2.new(0, 4, 0, 0)
+		Title.Position = UDim2.new(0, 0, 0, 0)
 		Title.BorderSizePixel = 0
 		Title.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		Title.TextStrokeTransparency = 0.75
-		Title.TextSize = 14
+		Title.TextSize = 13
 		Title.RichText = true
-		Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+		Title.TextColor3 = Color3.fromRGB(200, 200, 200)
 		Title.Text = "Slider"
 		Title.TextWrapped = true
 		Title.FontFace = Font.fromEnum(Enum.Font.SourceSans)
@@ -1379,16 +1397,16 @@ Bracket.Instances = {
 		Value.Name = "Value"
 		Value.ZIndex = 2
 		Value.AnchorPoint = Vector2.new(1, 0)
-		Value.Size = UDim2.new(0, 12, 1, 0)
+		Value.Size = UDim2.new(0, 30, 0, 13)
 		Value.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Value.BackgroundTransparency = 1
-		Value.Position = UDim2.new(1, -4, 0, 0)
+		Value.Position = UDim2.new(1, 0, 0, 0)
 		Value.BorderSizePixel = 0
 		Value.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		Value.TextStrokeTransparency = 0.75
-		Value.PlaceholderColor3 = Color3.fromRGB(191, 191, 191)
-		Value.TextSize = 14
-		Value.TextColor3 = Color3.fromRGB(255, 255, 255)
+		Value.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
+		Value.TextSize = 13
+		Value.TextColor3 = Color3.fromRGB(180, 180, 180)
 		Value.PlaceholderText = "50"
 		Value.Text = ""
 		Value.FontFace = Font.fromEnum(Enum.Font.SourceSans)
@@ -1397,11 +1415,11 @@ Bracket.Instances = {
 
 		local Background = Instance.new("Frame")
 		Background.Name = "Background"
-		Background.AnchorPoint = Vector2.new(0.5, 0.5)
+		Background.AnchorPoint = Vector2.new(0.5, 0)
 		Background.Size = UDim2.new(1, 0, 0, 4)
 		Background.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		Background.Position = UDim2.new(0.5, 0, 0.5, 0)
-		Background.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		Background.Position = UDim2.new(0.5, 0, 0, 18)
+		Background.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 		Background.Parent = Slider
 
 		local BackgroundCorner = Instance.new("UICorner")
@@ -2532,11 +2550,41 @@ Bracket.Templates = {
 		WindowInstance.Position = Window.Position
 		WindowInstance.Size = Window.Size
 
+		-- Floating toggle button (outside the window, on the screen)
+		local FloatBtn = Instance.new("TextButton")
+		FloatBtn.Name = "FloatToggleBtn"
+		FloatBtn.ZIndex = 10
+		FloatBtn.Size = UDim2.new(0, 52, 0, 20)
+		FloatBtn.Position = UDim2.new(1, -60, 0, 8)
+		FloatBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		FloatBtn.BorderSizePixel = 0
+		FloatBtn.AutoButtonColor = false
+		FloatBtn.TextSize = 11
+		FloatBtn.TextColor3 = Color3.fromRGB(210, 210, 210)
+		FloatBtn.Text = "HIDE ▲"
+		FloatBtn.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
+		FloatBtn.Parent = Bracket.Screen
+		local FloatBtnCorner = Instance.new("UICorner")
+		FloatBtnCorner.CornerRadius = UDim.new(1, 0)
+		FloatBtnCorner.Parent = FloatBtn
+		local FloatBtnStroke = Instance.new("UIStroke")
+		FloatBtnStroke.Color = Color3.fromRGB(80, 80, 80)
+		FloatBtnStroke.Thickness = 1
+		FloatBtnStroke.Parent = FloatBtn
+
+		Bracket.Utilities.MakeDraggable(FloatBtn, FloatBtn, function(Position)
+			FloatBtn.Position = Position
+		end)
+		FloatBtn.MouseButton1Click:Connect(function()
+			WindowInstance.Visible = not WindowInstance.Visible
+			FloatBtn.Text = WindowInstance.Visible and "HIDE ▲" or "SHOW ▼"
+		end)
+
 		Bracket.Utilities.MakeDraggable(WindowInstance.Topbar, WindowInstance, function(Position)
 			Window.Position = Position
 		end)
 
-		-- Toggle button: collapse/expand window body
+		-- Topbar minimize (collapses body only, window stays visible)
 		local WindowMinimized = false
 		WindowInstance.Topbar.ToggleBtn.MouseButton1Click:Connect(function()
 			WindowMinimized = not WindowMinimized
@@ -2545,9 +2593,6 @@ Bracket.Templates = {
 			WindowInstance.TabButtonContainer.Visible = not WindowMinimized
 			WindowInstance.Resize.Visible = not WindowMinimized
 			WindowInstance.Topbar.ToggleBtn.Text = WindowMinimized and "+" or "—"
-		end)
-		Bracket.Utilities.MakeDraggable(WindowInstance.Topbar.ToggleBtn, WindowInstance, function(Position)
-			Window.Position = Position
 		end)
 		Bracket.Utilities.MakeResizeable(WindowInstance.Resize, WindowInstance, Vector2.new(296, 296), Vector2.new(896, 896), function(Size)
 			Window.Size = Size
@@ -3100,16 +3145,16 @@ Bracket.Templates = {
 				SliderInstance.Size = UDim2.new(1, 0, 0, SliderInstance.Title.TextBounds.Y + 14)
 			end)
 		else
-			SliderInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(function()
-				SliderInstance.Value.Size = UDim2.new(0, SliderInstance.Value.TextBounds.X, 1, 0)
-				SliderInstance.Title.Size = UDim2.new(1, -(SliderInstance.Value.Size.X.Offset + 12), 1, 0)
-				SliderInstance.Size = UDim2.new(1, 0, 0, SliderInstance.Title.TextBounds.Y + 4)
-			end)
-			SliderInstance.Value:GetPropertyChangedSignal("TextBounds"):Connect(function()
-				SliderInstance.Value.Size = UDim2.new(0, SliderInstance.Value.TextBounds.X, 1, 0)
-				SliderInstance.Title.Size = UDim2.new(1, -(SliderInstance.Value.Size.X.Offset + 12), 1, 0)
-				SliderInstance.Size = UDim2.new(1, 0, 0, SliderInstance.Title.TextBounds.Y + 4)
-			end)
+			local function _ResizeSlider()
+				local TH = math.max(SliderInstance.Title.TextBounds.Y, 13)
+				local VW = math.max(SliderInstance.Value.TextBounds.X, 24)
+				SliderInstance.Value.Size = UDim2.new(0, VW, 0, TH)
+				SliderInstance.Title.Size = UDim2.new(1, -(VW + 6), 0, TH)
+				SliderInstance.Background.Position = UDim2.new(0.5, 0, 0, TH + 5)
+				SliderInstance.Size = UDim2.new(1, 0, 0, TH + 5 + 8)
+			end
+			SliderInstance.Title:GetPropertyChangedSignal("TextBounds"):Connect(_ResizeSlider)
+			SliderInstance.Value:GetPropertyChangedSignal("TextBounds"):Connect(_ResizeSlider)
 		end
 
 		SliderInstance.Value.FocusLost:Connect(function()

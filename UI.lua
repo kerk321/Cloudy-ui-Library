@@ -4575,6 +4575,8 @@ function Bracket.Window(Self, Window)
 
 	return Window
 end
+
+function Bracket.Cursor(Self, Cursor)
 	Cursor = Bracket.Utilities:GetType(Cursor, "table", {}, true)
 	Cursor.Enabled = Bracket.Utilities:GetType(Cursor.Enabled, "boolean", true)
 

@@ -19,6 +19,8 @@ local Bracket = {
 	Elements = {},
 	Windows = {},
 	Flags = {},
+	LuarmorProjectId = "dfb698192455e2a87fdf6a3c1efc8640",
+	LuarmorApiKey = nil,
 
 	SectionInclude = {
 		"Divider",
@@ -2550,24 +2552,22 @@ Bracket.Templates = {
 		WindowInstance.Size = Window.Size
 
 		-- Floating toggle button (outside the window, on the screen)
-		local FloatBtn = Instance.new("TextButton")
+		local FloatBtn = Instance.new("ImageButton")
 		FloatBtn.Name = "FloatToggleBtn"
 		FloatBtn.ZIndex = 10
-		FloatBtn.Size = UDim2.new(0, 52, 0, 20)
-		FloatBtn.Position = UDim2.new(1, -60, 0, 8)
+		FloatBtn.Size = UDim2.new(0, 32, 0, 32)
+		FloatBtn.Position = UDim2.new(1, -40, 0, 8)
 		FloatBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		FloatBtn.BorderSizePixel = 0
 		FloatBtn.AutoButtonColor = false
-		FloatBtn.TextSize = 11
-		FloatBtn.TextColor3 = Color3.fromRGB(210, 210, 210)
-		FloatBtn.Text = "HIDE ▲"
-		FloatBtn.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
+		FloatBtn.Image = "rbxassetid://77380393395155"
+		FloatBtn.ScaleType = Enum.ScaleType.Fit
 		FloatBtn.Parent = Bracket.Screen
 		local FloatBtnCorner = Instance.new("UICorner")
-		FloatBtnCorner.CornerRadius = UDim.new(1, 0)
+		FloatBtnCorner.CornerRadius = UDim.new(0, 6)
 		FloatBtnCorner.Parent = FloatBtn
 		local FloatBtnStroke = Instance.new("UIStroke")
-		FloatBtnStroke.Color = Color3.fromRGB(80, 80, 80)
+		FloatBtnStroke.Color = Color3.fromRGB(60, 60, 60)
 		FloatBtnStroke.Thickness = 1
 		FloatBtnStroke.Parent = FloatBtn
 
@@ -2576,7 +2576,6 @@ Bracket.Templates = {
 		end)
 		FloatBtn.MouseButton1Click:Connect(function()
 			WindowInstance.Visible = not WindowInstance.Visible
-			FloatBtn.Text = WindowInstance.Visible and "HIDE ▲" or "SHOW ▼"
 		end)
 
 		Bracket.Utilities.MakeDraggable(WindowInstance.Topbar, WindowInstance, function(Position)
@@ -4339,10 +4338,240 @@ function Bracket.Window(Self, Window)
 		return Tab
 	end
 
+	-- ======================================================
+	-- AUTO SETTINGS TAB (always last)
+	-- ======================================================
+	local _SettingsTab = Window:Tab({ Name = "Settings" })
+
+	-- LEFT: Menu section
+	local _MenuSection = _SettingsTab:Section({ Name = "Menu", Side = "Left" })
+
+	local _ShowHideToggle = _MenuSection:Toggle({
+		Name     = "Show/Hide UI",
+		Flag     = "_cloudy_showhide",
+		Value    = true,
+		Callback = function(Value)
+			Window.Enabled = Value
+		end,
+	})
+	_ShowHideToggle:Keybind({ Flag = "_cloudy_showhide_key" })
+
+	_MenuSection:Colorpicker({
+		Name     = "Custom UI Color",
+		Flag     = "_cloudy_ui_color",
+		Value    = { 0.72, 1, 1, 0, false },
+		Callback = function(Value, Color)
+			Window.Color = Color
+		end,
+	})
+
+	_MenuSection:Button({
+		Name     = "Unload Cloudy",
+		Callback = function()
+			Window.Enabled = false
+			Bracket.Screen:Destroy()
+		end,
+	})
+
+	_MenuSection:Divider({ Text = "Config System" })
+
+	_MenuSection:Textbox({
+		Name        = "Config Name",
+		Flag        = "_cloudy_config_name",
+		Placeholder = "Config Name",
+	})
+
+	_MenuSection:Button({
+		Name     = "Settings",
+		Callback = function() end,
+	})
+
+	_MenuSection:Divider({ Text = "Configs" })
+
+	_MenuSection:Textbox({
+		Name        = "Search Config",
+		Flag        = "_cloudy_config_search",
+		Placeholder = "Search...",
+	})
+
+	_MenuSection:Button({
+		Name     = "Save",
+		Callback = function()
+			local name = Bracket.Flags["_cloudy_config_name"]
+			if not name or name == "" then return end
+			if not isfolder("CloudyUI") then makefolder("CloudyUI") end
+			if not isfolder("CloudyUI\\Configs") then makefolder("CloudyUI\\Configs") end
+			writefile("CloudyUI\\Configs\\" .. name .. ".json", HttpService:JSONEncode(Bracket.Flags))
+		end,
+	})
+
+	_MenuSection:Button({
+		Name     = "Load",
+		Callback = function()
+			local name = Bracket.Flags["_cloudy_config_name"]
+			if not name or name == "" then return end
+			local path = "CloudyUI\\Configs\\" .. name .. ".json"
+			if not isfile(path) then return end
+			local data = HttpService:JSONDecode(readfile(path))
+			for flag, value in pairs(data) do
+				if Bracket.Flags[flag] ~= nil then
+					Bracket.Flags[flag] = value
+				end
+			end
+		end,
+	})
+
+	_MenuSection:Button({
+		Name     = "Delete",
+		Callback = function()
+			local name = Bracket.Flags["_cloudy_config_name"]
+			if not name or name == "" then return end
+			local path = "CloudyUI\\Configs\\" .. name .. ".json"
+			if isfile(path) then delfile(path) end
+		end,
+	})
+
+	_MenuSection:Button({
+		Name     = "Refresh",
+		Callback = function() end,
+	})
+
+	_MenuSection:Divider({ Text = "AutoLoad Config" })
+
+	_MenuSection:Button({
+		Name     = "Set AutoLoad Config",
+		Callback = function()
+			local name = Bracket.Flags["_cloudy_config_name"]
+			if not name or name == "" then return end
+			if not isfolder("CloudyUI") then makefolder("CloudyUI") end
+			writefile("CloudyUI\\AutoLoad.txt", name)
+		end,
+	})
+
+	_MenuSection:Button({
+		Name     = "Clear AutoLoad Config",
+		Callback = function()
+			if isfile("CloudyUI\\AutoLoad.txt") then delfile("CloudyUI\\AutoLoad.txt") end
+		end,
+	})
+
+	-- RIGHT: Background section
+	local _BgSection = _SettingsTab:Section({ Name = "Background", Side = "Right" })
+
+	_BgSection:Colorpicker({
+		Name     = "Background Color",
+		Flag     = "_cloudy_bg_color",
+		Value    = { 0, 0, 0, 0, false },
+		Callback = function(Value, Color)
+			Window.Instance.Background.ImageColor3 = Color
+		end,
+	})
+
+	_BgSection:Textbox({
+		Name        = "Background Image",
+		Flag        = "_cloudy_bg_image",
+		Placeholder = "rbxassetid://imageid",
+		Callback    = function(Value, Enter)
+			if Enter and Value ~= "" then
+				Window.Instance.Background.Image = Value
+			end
+		end,
+	})
+
+	_BgSection:Dropdown({
+		Name  = "Background Preset",
+		Flag  = "_cloudy_bg_preset",
+		List  = {
+			{ Name = "Default",   Mode = "Button", Value = true },
+			{ Name = "Dark Grid", Mode = "Button" },
+			{ Name = "Dots",      Mode = "Button" },
+			{ Name = "Waves",     Mode = "Button" },
+		},
+		Callback = function(Value, Option)
+			local presets = {
+				["Default"]   = "rbxassetid://5553946656",
+				["Dark Grid"] = "rbxassetid://6968231645",
+				["Dots"]      = "rbxassetid://7148082303",
+				["Waves"]     = "rbxassetid://3339406738",
+			}
+			if presets[Option.Name] then
+				Window.Instance.Background.Image = presets[Option.Name]
+			end
+		end,
+	})
+
+	_BgSection:Slider({
+		Name     = "Title Offset",
+		Flag     = "_cloudy_title_offset",
+		Min      = 0,
+		Max      = 100,
+		Value    = 0,
+		Callback = function(Value)
+			Window.Instance.Topbar.Title.Position = UDim2.new(0, 6 + Value, 0.5, 0)
+		end,
+	})
+
+	-- RIGHT: Misc section
+	local _MiscSection = _SettingsTab:Section({ Name = "Misc", Side = "Right" })
+
+	_MiscSection:Divider({ Text = "Socials" })
+
+	_MiscSection:Button({
+		Name     = "Copy Discord Invite",
+		Callback = function()
+			setclipboard("discord.gg/getcloudy")
+		end,
+	})
+
+	_MiscSection:Button({
+		Name     = "Copy Website Url",
+		Callback = function()
+			setclipboard("https://getcloudy.gg")
+		end,
+	})
+
+	_MiscSection:Divider({ Text = "Key Info" })
+
+	-- Luarmor: fetch current user key and plan via HWID
+	local _UserKey  = "N/A"
+	local _UserPlan = "N/A"
+	local _UserHwid = "N/A"
+	pcall(function()
+		_UserHwid = game:GetService("RbxAnalyticsService"):GetClientId()
+	end)
+	if Bracket.LuarmorProjectId and Bracket.LuarmorApiKey then
+		pcall(function()
+			local url = "https://api.luarmor.net/v3/projects/" .. Bracket.LuarmorProjectId
+				.. "/users?identifier=" .. HttpService:UrlEncode(_UserHwid)
+			local headers = { ["Authorization"] = Bracket.LuarmorApiKey, ["Content-Type"] = "application/json" }
+			local resp = HttpService:JSONDecode(game:HttpGetAsync(url, headers))
+			if resp and resp.success and resp.users and resp.users[1] then
+				local u = resp.users[1]
+				_UserKey  = u.user_key or "N/A"
+				local planMap = { r = "Regular", p = "Premium", u = "Ultimate", e = "Enterprise" }
+				_UserPlan = planMap[u.plan] or u.plan or "Unknown"
+			end
+		end)
+	end
+
+	_MiscSection:Label({ Text = "Key Duration: " .. _UserPlan })
+
+	_MiscSection:Button({
+		Name     = "Copy Key",
+		Callback = function()
+			setclipboard(_UserKey)
+		end,
+	})
+
+	_MiscSection:Button({
+		Name     = "Copy Hwid",
+		Callback = function()
+			setclipboard(_UserHwid)
+		end,
+	})
+
 	return Window
 end
-
-function Bracket.Cursor(Self, Cursor)
 	Cursor = Bracket.Utilities:GetType(Cursor, "table", {}, true)
 	Cursor.Enabled = Bracket.Utilities:GetType(Cursor.Enabled, "boolean", true)
 

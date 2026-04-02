@@ -4342,6 +4342,7 @@ function Bracket.Window(Self, Window)
 	-- AUTO SETTINGS TAB (always last)
 	-- ======================================================
 	local _SettingsTab = Window:Tab({ Name = "Settings" })
+	_SettingsTab.ButtonInstance.LayoutOrder = math.huge
 
 	-- LEFT: Menu section
 	local _MenuSection = _SettingsTab:Section({ Name = "Menu", Side = "Left" })
@@ -4373,85 +4374,121 @@ function Bracket.Window(Self, Window)
 		end,
 	})
 
-	_MenuSection:Divider({ Text = "Config System" })
+	-- LEFT: Config section
+	local _CfgFolderName = "CloudyUI"
+	local _CfgSection    = _SettingsTab:Section({ Name = "Config System", Side = "Left" })
 
-	_MenuSection:Textbox({
+	-- Name textbox used when creating a new config
+	local _CfgNameBox = _CfgSection:Textbox({
 		Name        = "Config Name",
 		Flag        = "_cloudy_config_name",
 		Placeholder = "Config Name",
+		IgnoreFlag  = true,
 	})
 
-	_MenuSection:Button({
-		Name     = "Settings",
-		Callback = function() end,
+	-- Dropdown that lists existing configs on disk
+	local _CfgList     = Bracket.Utilities.ConfigsToList(_CfgFolderName)
+	local _CfgDropdown = _CfgSection:Dropdown({
+		Name      = "Select Config",
+		Flag      = "_cloudy_config_select",
+		IgnoreFlag = true,
+		List      = _CfgList,
 	})
 
-	_MenuSection:Divider({ Text = "Configs" })
+	local function _RefreshCfgDropdown()
+		_CfgDropdown:Clear()
+		local newList = Bracket.Utilities.ConfigsToList(_CfgFolderName)
+		_CfgDropdown:BulkAdd(newList)
+		_CfgDropdown.Value = {}
+	end
 
-	_MenuSection:Textbox({
-		Name        = "Search Config",
-		Flag        = "_cloudy_config_search",
-		Placeholder = "Search...",
-	})
-
-	_MenuSection:Button({
-		Name     = "Save",
+	_CfgSection:Button({
+		Name     = "Create Config",
 		Callback = function()
-			local name = Bracket.Flags["_cloudy_config_name"]
-			if not name or name == "" then return end
-			if not isfolder("CloudyUI") then makefolder("CloudyUI") end
-			if not isfolder("CloudyUI\\Configs") then makefolder("CloudyUI\\Configs") end
-			writefile("CloudyUI\\Configs\\" .. name .. ".json", HttpService:JSONEncode(Bracket.Flags))
-		end,
-	})
-
-	_MenuSection:Button({
-		Name     = "Load",
-		Callback = function()
-			local name = Bracket.Flags["_cloudy_config_name"]
-			if not name or name == "" then return end
-			local path = "CloudyUI\\Configs\\" .. name .. ".json"
-			if not isfile(path) then return end
-			local data = HttpService:JSONDecode(readfile(path))
-			for flag, value in pairs(data) do
-				if Bracket.Flags[flag] ~= nil then
-					Bracket.Flags[flag] = value
-				end
+			local name = _CfgNameBox.Value
+			if not name or name == "" then
+				Bracket:PushNotification({ Title = "Config System", Description = "Enter a config name first", Duration = 5 })
+				return
 			end
+			Bracket:SaveConfig(_CfgFolderName, name)
+			_RefreshCfgDropdown()
+			Bracket:PushNotification({ Title = "Config System", Description = "Saved: " .. name, Duration = 5 })
 		end,
 	})
 
-	_MenuSection:Button({
-		Name     = "Delete",
+	_CfgSection:Divider({ Text = "Config Actions" })
+
+	_CfgSection:Button({
+		Name     = "Save Config",
 		Callback = function()
-			local name = Bracket.Flags["_cloudy_config_name"]
-			if not name or name == "" then return end
-			local path = "CloudyUI\\Configs\\" .. name .. ".json"
-			if isfile(path) then delfile(path) end
+			local sel = _CfgDropdown.Value and _CfgDropdown.Value[1]
+			if not sel then
+				Bracket:PushNotification({ Title = "Config System", Description = "Select a config first", Duration = 5 })
+				return
+			end
+			Bracket:SaveConfig(_CfgFolderName, sel)
+			Bracket:PushNotification({ Title = "Config System", Description = "Saved: " .. sel, Duration = 5 })
 		end,
 	})
 
-	_MenuSection:Button({
-		Name     = "Refresh",
-		Callback = function() end,
+	_CfgSection:Button({
+		Name     = "Load Config",
+		Callback = function()
+			local sel = _CfgDropdown.Value and _CfgDropdown.Value[1]
+			if not sel then
+				Bracket:PushNotification({ Title = "Config System", Description = "Select a config first", Duration = 5 })
+				return
+			end
+			Bracket:LoadConfig(_CfgFolderName, sel)
+			Bracket:PushNotification({ Title = "Config System", Description = "Loaded: " .. sel, Duration = 5 })
+		end,
 	})
 
-	_MenuSection:Divider({ Text = "AutoLoad Config" })
+	_CfgSection:Button({
+		Name     = "Delete Config",
+		Callback = function()
+			local sel = _CfgDropdown.Value and _CfgDropdown.Value[1]
+			if not sel then
+				Bracket:PushNotification({ Title = "Config System", Description = "Select a config first", Duration = 5 })
+				return
+			end
+			Bracket:DeleteConfig(_CfgFolderName, sel)
+			_RefreshCfgDropdown()
+			Bracket:PushNotification({ Title = "Config System", Description = "Deleted: " .. sel, Duration = 5 })
+		end,
+	})
 
-	_MenuSection:Button({
+	_CfgSection:Button({
+		Name     = "Refresh List",
+		Callback = _RefreshCfgDropdown,
+	})
+
+	local _AutoloadConfig = Bracket:GetAutoloadConfig(_CfgFolderName)
+	local _AutoloadDivider = _CfgSection:Divider({
+		Text = not _AutoloadConfig and "AutoLoad Config"
+			or ('AutoLoad Config\n<font color="rgb(191,191,191)">[ ' .. _AutoloadConfig .. " ]</font>"),
+	})
+
+	_CfgSection:Button({
 		Name     = "Set AutoLoad Config",
 		Callback = function()
-			local name = Bracket.Flags["_cloudy_config_name"]
-			if not name or name == "" then return end
-			if not isfolder("CloudyUI") then makefolder("CloudyUI") end
-			writefile("CloudyUI\\AutoLoad.txt", name)
+			local sel = _CfgDropdown.Value and _CfgDropdown.Value[1]
+			if not sel then
+				Bracket:PushNotification({ Title = "Config System", Description = "Select a config first", Duration = 5 })
+				return
+			end
+			Bracket:AddToAutoload(_CfgFolderName, sel)
+			_AutoloadDivider.Text = 'AutoLoad Config\n<font color="rgb(191,191,191)">[ ' .. sel .. " ]</font>"
+			Bracket:PushNotification({ Title = "Config System", Description = "AutoLoad set to: " .. sel, Duration = 5 })
 		end,
 	})
 
-	_MenuSection:Button({
+	_CfgSection:Button({
 		Name     = "Clear AutoLoad Config",
 		Callback = function()
-			if isfile("CloudyUI\\AutoLoad.txt") then delfile("CloudyUI\\AutoLoad.txt") end
+			Bracket:RemoveFromAutoload(_CfgFolderName)
+			_AutoloadDivider.Text = "AutoLoad Config"
+			Bracket:PushNotification({ Title = "Config System", Description = "AutoLoad cleared", Duration = 5 })
 		end,
 	})
 
@@ -4463,41 +4500,59 @@ function Bracket.Window(Self, Window)
 		Flag     = "_cloudy_bg_color",
 		Value    = { 0, 0, 0, 0, false },
 		Callback = function(Value, Color)
-			Window.Instance.Background.ImageColor3 = Color
+			Window.Background.ImageColor3 = Color
 		end,
 	})
 
 	_BgSection:Textbox({
-		Name        = "Background Image",
+		Name        = "Background Image ID",
 		Flag        = "_cloudy_bg_image",
-		Placeholder = "rbxassetid://imageid",
-		Callback    = function(Value, Enter)
-			if Enter and Value ~= "" then
-				Window.Instance.Background.Image = Value
+		Placeholder = "rbxassetid://...",
+		Callback    = function(Value, EnterPressed)
+			if Value ~= "" then
+				Window.Background.Image = Value
 			end
 		end,
 	})
 
+	local function _ApplyBgPreset(presetName)
+		local presets = {
+			["Default"]   = "rbxassetid://5553946656",
+			["Dark Grid"] = "rbxassetid://6968231645",
+			["Dots"]      = "rbxassetid://7148082303",
+			["Waves"]     = "rbxassetid://3339406738",
+		}
+		if presets[presetName] then
+			Window.Background.Image = presets[presetName]
+		end
+	end
+
 	_BgSection:Dropdown({
-		Name  = "Background Preset",
-		Flag  = "_cloudy_bg_preset",
-		List  = {
-			{ Name = "Default",   Mode = "Button", Value = true },
-			{ Name = "Dark Grid", Mode = "Button" },
-			{ Name = "Dots",      Mode = "Button" },
-			{ Name = "Waves",     Mode = "Button" },
+		Name = "Background Preset",
+		Flag = "_cloudy_bg_preset",
+		List = {
+			{
+				Name     = "Default",
+				Mode     = "Button",
+				Value    = true,
+				Callback = function() _ApplyBgPreset("Default") end,
+			},
+			{
+				Name     = "Dark Grid",
+				Mode     = "Button",
+				Callback = function() _ApplyBgPreset("Dark Grid") end,
+			},
+			{
+				Name     = "Dots",
+				Mode     = "Button",
+				Callback = function() _ApplyBgPreset("Dots") end,
+			},
+			{
+				Name     = "Waves",
+				Mode     = "Button",
+				Callback = function() _ApplyBgPreset("Waves") end,
+			},
 		},
-		Callback = function(Value, Option)
-			local presets = {
-				["Default"]   = "rbxassetid://5553946656",
-				["Dark Grid"] = "rbxassetid://6968231645",
-				["Dots"]      = "rbxassetid://7148082303",
-				["Waves"]     = "rbxassetid://3339406738",
-			}
-			if presets[Option.Name] then
-				Window.Instance.Background.Image = presets[Option.Name]
-			end
-		end,
 	})
 
 	_BgSection:Slider({

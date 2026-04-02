@@ -768,7 +768,7 @@ Bracket.Instances = {
 		local Title = Instance.new("TextLabel")
 		Title.Name = "Title"
 		Title.AnchorPoint = Vector2.new(0, 0.5)
-		Title.Size = UDim2.new(1, -74, 1, 0)
+		Title.Size = UDim2.new(1, -44, 1, 0)
 		Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Title.BackgroundTransparency = 1
 		Title.Position = UDim2.new(0, 4, 0.5, 0)
@@ -786,24 +786,23 @@ Bracket.Instances = {
 		Title.TextXAlignment = Enum.TextXAlignment.Left
 		Title.Parent = Topbar
 
-		local Label = Instance.new("TextLabel")
-		Label.Name = "Label"
-		Label.AnchorPoint = Vector2.new(1, 0.5)
-		Label.Size = UDim2.new(0, 62, 1, 0)
-		Label.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		Label.BackgroundTransparency = 1
-		Label.Position = UDim2.new(1, -4, 0.5, 0)
-		Label.BorderSizePixel = 0
-		Label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		Label.TextStrokeTransparency = 0.75
-		Label.TextSize = 14
-		Label.RichText = true
-		Label.TextColor3 = Color3.fromRGB(191, 191, 191)
-		-- Label.TextYAlignment = Enum.TextYAlignment.Top
-		Label.Text = "Bracket V3.4"
-		Label.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
-		Label.TextXAlignment = Enum.TextXAlignment.Right
-		Label.Parent = Topbar
+		local ToggleBtn = Instance.new("TextButton")
+		ToggleBtn.Name = "ToggleBtn"
+		ToggleBtn.AnchorPoint = Vector2.new(1, 0.5)
+		ToggleBtn.Size = UDim2.new(0, 30, 0, 12)
+		ToggleBtn.BorderSizePixel = 0
+		ToggleBtn.Position = UDim2.new(1, -4, 0.5, 0)
+		ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		ToggleBtn.AutoButtonColor = false
+		ToggleBtn.TextSize = 10
+		ToggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+		ToggleBtn.Text = "—"
+		ToggleBtn.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
+		ToggleBtn.Parent = Topbar
+
+		local ToggleBtnCorner = Instance.new("UICorner")
+		ToggleBtnCorner.CornerRadius = UDim.new(1, 0)
+		ToggleBtnCorner.Parent = ToggleBtn
 
 		local Background = Instance.new("ImageLabel")
 		Background.Name = "Background"
@@ -826,13 +825,13 @@ Bracket.Instances = {
 		Resize.Name = "Resize"
 		Resize.ZIndex = 5
 		Resize.AnchorPoint = Vector2.new(1, 1)
-		Resize.Size = UDim2.new(0, 10, 0, 10)
+		Resize.Size = UDim2.new(0, 24, 0, 24)
 		Resize.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Resize.BackgroundTransparency = 1
 		Resize.Position = UDim2.new(1, 0, 1, 0)
 		Resize.BorderSizePixel = 0
 		Resize.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		Resize.ImageColor3 = Color3.fromRGB(63, 63, 63)
+		Resize.ImageColor3 = Color3.fromRGB(100, 100, 100)
 		Resize.ScaleType = Enum.ScaleType.Fit
 		Resize.ResampleMode = Enum.ResamplerMode.Pixelated
 		Resize.Image = "rbxassetid://7368471234"
@@ -1346,7 +1345,7 @@ Bracket.Instances = {
 	Slider = function()
 		local Slider = Instance.new("TextButton")
 		Slider.Name = "Slider"
-		Slider.Size = UDim2.new(1, 0, 0, 18)
+		Slider.Size = UDim2.new(1, 0, 0, 14)
 		Slider.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Slider.BackgroundTransparency = 1
 		Slider.BorderSizePixel = 0
@@ -1399,11 +1398,15 @@ Bracket.Instances = {
 		local Background = Instance.new("Frame")
 		Background.Name = "Background"
 		Background.AnchorPoint = Vector2.new(0.5, 0.5)
-		Background.Size = UDim2.new(1, 0, 1, 0)
+		Background.Size = UDim2.new(1, 0, 0, 4)
 		Background.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Background.Position = UDim2.new(0.5, 0, 0.5, 0)
 		Background.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 		Background.Parent = Slider
+
+		local BackgroundCorner = Instance.new("UICorner")
+		BackgroundCorner.CornerRadius = UDim.new(1, 0)
+		BackgroundCorner.Parent = Background
 
 		local Gradient = Instance.new("UIGradient")
 		Gradient.Name = "Gradient"
@@ -1421,6 +1424,10 @@ Bracket.Instances = {
 		Bar.BorderSizePixel = 0
 		Bar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		Bar.Parent = Background
+
+		local BarCorner = Instance.new("UICorner")
+		BarCorner.CornerRadius = UDim.new(1, 0)
+		BarCorner.Parent = Bar
 
 		Gradient = Instance.new("UIGradient")
 		Gradient.Name = "Gradient"
@@ -1736,7 +1743,7 @@ Bracket.Instances = {
 		OptionContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 		OptionContainer.ScrollBarImageColor3 = Color3.fromRGB(63, 63, 63)
 		OptionContainer.MidImage = "rbxassetid://6432766838"
-		OptionContainer.ScrollBarThickness = 6
+		OptionContainer.ScrollBarThickness = 8
 		OptionContainer.TopImage = "rbxassetid://6432766838"
 		OptionContainer.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
 		OptionContainer.BottomImage = "rbxassetid://6432766838"
@@ -2528,6 +2535,20 @@ Bracket.Templates = {
 		Bracket.Utilities.MakeDraggable(WindowInstance.Topbar, WindowInstance, function(Position)
 			Window.Position = Position
 		end)
+
+		-- Toggle button: collapse/expand window body
+		local WindowMinimized = false
+		WindowInstance.Topbar.ToggleBtn.MouseButton1Click:Connect(function()
+			WindowMinimized = not WindowMinimized
+			WindowInstance.Background.Visible = not WindowMinimized
+			WindowInstance.TabContainer.Visible = not WindowMinimized
+			WindowInstance.TabButtonContainer.Visible = not WindowMinimized
+			WindowInstance.Resize.Visible = not WindowMinimized
+			WindowInstance.Topbar.ToggleBtn.Text = WindowMinimized and "+" or "—"
+		end)
+		Bracket.Utilities.MakeDraggable(WindowInstance.Topbar.ToggleBtn, WindowInstance, function(Position)
+			Window.Position = Position
+		end)
 		Bracket.Utilities.MakeResizeable(WindowInstance.Resize, WindowInstance, Vector2.new(296, 296), Vector2.new(896, 896), function(Size)
 			Window.Size = Size
 		end)
@@ -3104,11 +3125,11 @@ Bracket.Templates = {
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				AttachToMouse(Input)
 				Slider.Active = true
-			end
-		end)
-		SliderInstance.InputEnded:Connect(function(Input)
-			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-				Slider.Active = false
+				Input.Changed:Connect(function()
+					if Input.UserInputState == Enum.UserInputState.End then
+						Slider.Active = false
+					end
+				end)
 			end
 		end)
 		UserInputService.InputChanged:Connect(function(Input)
@@ -3747,7 +3768,7 @@ Bracket.Templates = {
 					)
 					OptionContainerInstance.Size = UDim2.fromOffset(
 						DropdownInstance.Background.AbsoluteSize.X,
-						math.clamp(OptionContainerInstance.ListLayout.AbsoluteContentSize.Y, 14, 84) + 6
+						math.clamp(OptionContainerInstance.ListLayout.AbsoluteContentSize.Y, 14, 150) + 6
 						-- OptionContainerInstance.ListLayout.AbsoluteContentSize.Y + 2
 					)
 				end)

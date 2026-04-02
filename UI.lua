@@ -786,10 +786,10 @@ Bracket.Instances = {
 		local Title = Instance.new("TextLabel")
 		Title.Name = "Title"
 		Title.AnchorPoint = Vector2.new(0, 0.5)
-		Title.Size = UDim2.new(1, -44, 1, 0)
+		Title.Size = UDim2.new(1, -8, 1, 0)
 		Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Title.BackgroundTransparency = 1
-		Title.Position = UDim2.new(0, 4, 0.5, 0)
+		Title.Position = UDim2.new(0, 6, 0.5, 0)
 		Title.BorderSizePixel = 0
 		Title.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		Title.TextStrokeTransparency = 0.75
@@ -803,24 +803,6 @@ Bracket.Instances = {
 		Title.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
 		Title.TextXAlignment = Enum.TextXAlignment.Left
 		Title.Parent = Topbar
-
-		local ToggleBtn = Instance.new("TextButton")
-		ToggleBtn.Name = "ToggleBtn"
-		ToggleBtn.AnchorPoint = Vector2.new(1, 0.5)
-		ToggleBtn.Size = UDim2.new(1, -8, 0, 12)
-		ToggleBtn.BorderSizePixel = 0
-		ToggleBtn.Position = UDim2.new(1, -4, 0.5, 0)
-		ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		ToggleBtn.AutoButtonColor = false
-		ToggleBtn.TextSize = 10
-		ToggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-		ToggleBtn.Text = "—"
-		ToggleBtn.FontFace = Font.fromEnum(Enum.Font.SourceSansSemibold)
-		ToggleBtn.Parent = Topbar
-
-		local ToggleBtnCorner = Instance.new("UICorner")
-		ToggleBtnCorner.CornerRadius = UDim.new(1, 0)
-		ToggleBtnCorner.Parent = ToggleBtn
 
 		local Background = Instance.new("ImageLabel")
 		Background.Name = "Background"
@@ -2584,16 +2566,6 @@ Bracket.Templates = {
 			Window.Position = Position
 		end)
 
-		-- Topbar minimize (collapses body only, window stays visible)
-		local WindowMinimized = false
-		WindowInstance.Topbar.ToggleBtn.MouseButton1Click:Connect(function()
-			WindowMinimized = not WindowMinimized
-			WindowInstance.Background.Visible = not WindowMinimized
-			WindowInstance.TabContainer.Visible = not WindowMinimized
-			WindowInstance.TabButtonContainer.Visible = not WindowMinimized
-			WindowInstance.Resize.Visible = not WindowMinimized
-			WindowInstance.Topbar.ToggleBtn.Text = WindowMinimized and "+" or "—"
-		end)
 		Bracket.Utilities.MakeResizeable(WindowInstance.Resize, WindowInstance, Vector2.new(296, 296), Vector2.new(896, 896), function(Size)
 			Window.Size = Size
 		end)

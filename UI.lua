@@ -4544,7 +4544,10 @@ function Bracket.Window(Self, Window)
 			local url = "https://api.luarmor.net/v3/projects/" .. Bracket.LuarmorProjectId
 				.. "/users?identifier=" .. HttpService:UrlEncode(_UserHwid)
 			local headers = { ["Authorization"] = Bracket.LuarmorApiKey, ["Content-Type"] = "application/json" }
-			local resp = HttpService:JSONDecode(game:HttpGetAsync(url, headers))
+			-- Use exploit HTTP request (supports custom headers)
+			local httpFunc = syn and syn.request or http and http.request or request
+			local result = httpFunc({ Url = url, Method = "GET", Headers = headers })
+			local resp = HttpService:JSONDecode(result.Body)
 			if resp and resp.success and resp.users and resp.users[1] then
 				local u = resp.users[1]
 				_UserKey  = u.user_key or "N/A"

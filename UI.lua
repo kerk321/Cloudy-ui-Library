@@ -357,7 +357,7 @@ Bracket.Utilities = {
 	GetAutoWindowSize = function()
 		local ViewportSize = workspace.CurrentCamera.ViewportSize
 		if not UserInputService.TouchEnabled then
-			return UDim2.new(0, 430, 0, 496), UDim2.new(0.5, -215, 0.5, -248)
+			return UDim2.new(0, 380, 0, 496), UDim2.new(0.5, -190, 0.5, -248)
 		elseif ViewportSize.X < 700 or ViewportSize.Y < 700 then
 			-- Phone: slightly narrower, comfortable height
 			local W = math.min(math.floor(ViewportSize.X * 0.82), 310)
@@ -745,9 +745,9 @@ Bracket.Instances = {
 		local Window = Instance.new("Frame")
 		Window.Name = "Window"
 		Window.ZIndex = 3
-		Window.Size = UDim2.new(0, 430, 0, 496)
+		Window.Size = UDim2.new(0, 380, 0, 496)
 		Window.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		Window.Position = UDim2.new(0.5, -215, 0.5, -248)
+		Window.Position = UDim2.new(0.5, -190, 0.5, -248)
 		Window.BorderSizePixel = 2
 		Window.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
 
@@ -2556,8 +2556,8 @@ Bracket.Templates = {
 		local FloatBtn = Instance.new("ImageButton")
 		FloatBtn.Name = "FloatToggleBtn"
 		FloatBtn.ZIndex = 10
-		FloatBtn.Size = UDim2.new(0, 32, 0, 32)
-		FloatBtn.Position = UDim2.new(1, -40, 0, 8)
+		FloatBtn.Size = UDim2.new(0, 52, 0, 52)
+		FloatBtn.Position = UDim2.new(1, -62, 0, 8)
 		FloatBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		FloatBtn.BorderSizePixel = 0
 		FloatBtn.AutoButtonColor = false
@@ -2565,11 +2565,11 @@ Bracket.Templates = {
 		FloatBtn.ScaleType = Enum.ScaleType.Fit
 		FloatBtn.Parent = Bracket.Screen
 		local FloatBtnCorner = Instance.new("UICorner")
-		FloatBtnCorner.CornerRadius = UDim.new(0, 6)
+		FloatBtnCorner.CornerRadius = UDim.new(0, 10)
 		FloatBtnCorner.Parent = FloatBtn
 		local FloatBtnStroke = Instance.new("UIStroke")
 		FloatBtnStroke.Color = Color3.fromRGB(60, 60, 60)
-		FloatBtnStroke.Thickness = 1
+		FloatBtnStroke.Thickness = 1.5
 		FloatBtnStroke.Parent = FloatBtn
 
 		Bracket.Utilities.MakeDraggable(FloatBtn, FloatBtn, function(Position)

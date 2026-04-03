@@ -357,7 +357,7 @@ Bracket.Utilities = {
 	GetAutoWindowSize = function()
 		local ViewportSize = workspace.CurrentCamera.ViewportSize
 		if not UserInputService.TouchEnabled then
-			return UDim2.new(0, 496, 0, 496), UDim2.new(0.5, -248, 0.5, -248)
+			return UDim2.new(0, 430, 0, 496), UDim2.new(0.5, -215, 0.5, -248)
 		elseif ViewportSize.X < 700 or ViewportSize.Y < 700 then
 			-- Phone: slightly narrower, comfortable height
 			local W = math.min(math.floor(ViewportSize.X * 0.82), 310)
@@ -745,9 +745,9 @@ Bracket.Instances = {
 		local Window = Instance.new("Frame")
 		Window.Name = "Window"
 		Window.ZIndex = 3
-		Window.Size = UDim2.new(0, 496, 0, 496)
+		Window.Size = UDim2.new(0, 430, 0, 496)
 		Window.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		Window.Position = UDim2.new(0.5, -248, 0.5, -248)
+		Window.Position = UDim2.new(0.5, -215, 0.5, -248)
 		Window.BorderSizePixel = 2
 		Window.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
 
@@ -835,7 +835,7 @@ Bracket.Instances = {
 		Background.BorderSizePixel = 0
 		Background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 		Background.ScaleType = Enum.ScaleType.Tile
-		Background.ImageColor3 = Color3.fromRGB(255, 255, 255)
+		Background.ImageColor3 = Color3.fromRGB(20, 20, 25)
 		Background.TileSize = UDim2.new(0, 74, 0, 74)
 		Background.Image = "rbxassetid://5553946656"
 		Background.Parent = Window
@@ -2697,7 +2697,11 @@ Bracket.Templates = {
 
 		if not Window._hasSelectedFirstTab and Tab.Name ~= "Settings" then
 			Window._hasSelectedFirstTab = true
-			ChooseTab(Window.Instance, TabButtonInstance, TabInstance)
+			-- Use task.defer so it runs after ALL tabs (including Settings) are created,
+			-- preventing Settings from visually overriding the first tab selection
+			task.defer(function()
+				ChooseTab(Window.Instance, TabButtonInstance, TabInstance)
+			end)
 		end
 
 		Tab:GetPropertyChangedSignal("Name"):Connect(function(Name)
@@ -4503,7 +4507,7 @@ function Bracket.Window(Self, Window)
 	_BgSection:Colorpicker({
 		Name     = "Background Color",
 		Flag     = "_cloudy_bg_color",
-		Value    = { 0, 0, 1, 0, false },
+		Value    = { 0, 0, 0.08, 0, false },
 		Callback = function(Value, Color)
 			_WinBg.ImageColor3 = Color
 			_WinBg.ImageTransparency = Value[4]

@@ -2541,6 +2541,7 @@ Bracket.Templates = {
 		-- Window.LegacyTabButtons = false
 		Window.RainbowHue = 0
 		Window.Colorable = {}
+		Window._hasSelectedFirstTab = false
 
 		Bracket.Windows[#Bracket.Windows + 1] = Window
 		Bracket.Elements[#Bracket.Elements + 1] = Window
@@ -2694,7 +2695,8 @@ Bracket.Templates = {
 			ChooseTab(Window.Instance, TabButtonInstance, TabInstance)
 		end)
 
-		if #Window.Instance.TabContainer:GetChildren() == 1 then
+		if not Window._hasSelectedFirstTab and Tab.Name ~= "Settings" then
+			Window._hasSelectedFirstTab = true
 			ChooseTab(Window.Instance, TabButtonInstance, TabInstance)
 		end
 
@@ -4360,7 +4362,7 @@ function Bracket.Window(Self, Window)
 	_MenuSection:Colorpicker({
 		Name     = "Custom UI Color",
 		Flag     = "_cloudy_ui_color",
-		Value    = { 0.72, 1, 1, 0, false },
+		Value    = { 0, 0, 0, 0, false },
 		Callback = function(Value, Color)
 			Window.Color = Color
 		end,

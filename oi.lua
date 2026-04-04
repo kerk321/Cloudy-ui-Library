@@ -158,15 +158,15 @@ local function getAutoWindowMetrics()
 	if device == "Phone" then
 		local width = math.min(math.floor(viewport.X * 0.92), 355)
 		local height = math.min(math.floor(viewport.Y * 0.84), 560)
-		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2), 0.5, -math.floor(height / 2))
+		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 8, 0.5, -math.floor(height / 2))
 	elseif device == "Tablet" then
 		local width = math.min(math.floor(viewport.X * 0.82), 760)
 		local height = math.min(math.floor(viewport.Y * 0.84), 650)
-		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2), 0.5, -math.floor(height / 2))
+		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 18, 0.5, -math.floor(height / 2))
 	else
 		local width = math.min(math.floor(viewport.X * 0.88), 1060)
 		local height = math.min(math.floor(viewport.Y * 0.88), 740)
-		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2), 0.5, -math.floor(height / 2))
+		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 24, 0.5, -math.floor(height / 2))
 	end
 end
 
@@ -341,7 +341,8 @@ local function createHomeCard(parent, width)
 		Parent = parent,
 	})
 	round(card, 20)
-	stroke(card, Palette.BorderSoft)
+	local cardStroke = stroke(card, Palette.BorderSoft)
+	cardStroke.Name = "CardStroke"
 	gradient(card, 180, ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 21, 31)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 15, 23)),
@@ -357,6 +358,116 @@ local function createHomeCard(parent, width)
 	padding(inner, 14, 14, 14, 14)
 	layout(inner, Enum.FillDirection.Vertical, Enum.HorizontalAlignment.Left, 12)
 	return card, inner
+end
+
+local function createHomePreview(parent, mode)
+	local preview = create("Frame", {
+		Size = UDim2.new(1, 0, 0, 118),
+		BackgroundColor3 = Palette.BackgroundAlt,
+		BorderSizePixel = 0,
+		ZIndex = 8,
+		Parent = parent,
+	})
+	round(preview, 16)
+	stroke(preview, Palette.BorderSoft, 1, 0.45)
+	gradient(preview, 135, ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 19, 30)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 11, 18)),
+	}))
+
+	if mode == "Updates" then
+		for index, config in ipairs({
+			{ 14, 16, 176, 34, "Patch Notes" },
+			{ 14, 56, 154, 26, "Responsive Tweaks" },
+			{ 14, 88, 118, 10, "Announcements" },
+		}) do
+			local mini = create("Frame", {
+				Position = UDim2.fromOffset(config[1], config[2]),
+				Size = UDim2.fromOffset(config[3], config[4]),
+				BackgroundColor3 = Palette.SurfaceSoft,
+				BackgroundTransparency = index == 3 and 0.18 or 0.05,
+				BorderSizePixel = 0,
+				ZIndex = 9,
+				Parent = preview,
+			})
+			round(mini, 10)
+			stroke(mini, Palette.BorderSoft, 1, 0.55)
+			createLabel(mini, {
+				Text = config[5],
+				Font = Enum.Font.GothamSemibold,
+				TextSize = 10,
+				Size = UDim2.new(1, -10, 1, 0),
+				Position = UDim2.new(0, 6, 0, 0),
+				ZIndex = 10,
+			})
+		end
+	elseif mode == "Scripts" then
+		local core = create("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.56, 0),
+			Size = UDim2.fromOffset(24, 24),
+			BackgroundColor3 = Palette.Background,
+			BorderSizePixel = 0,
+			ZIndex = 9,
+			Parent = preview,
+		})
+		round(core, 999)
+		stroke(core, Palette.AccentSoft)
+		createLabel(core, {
+			Text = "C",
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextColor3 = Palette.Accent,
+			Size = UDim2.new(1, 0, 1, 0),
+			ZIndex = 10,
+		})
+		for index, y in ipairs({ 18, 41, 64, 87 }) do
+			create("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.56, 0),
+				Size = UDim2.fromOffset(90 - ((index - 1) * 12), 1),
+				Rotation = ({ -10, -2, 9, 16 })[index],
+				BackgroundColor3 = Palette.BorderSoft,
+				BorderSizePixel = 0,
+				ZIndex = 8,
+				Parent = preview,
+			})
+			local orb = create("Frame", {
+				Position = UDim2.fromOffset(194, y),
+				Size = UDim2.fromOffset(18, 18),
+				BackgroundColor3 = ({ Color3.fromRGB(243, 109, 73), Color3.fromRGB(84, 164, 255), Color3.fromRGB(229, 183, 60), Color3.fromRGB(92, 92, 96) })[index],
+				BorderSizePixel = 0,
+				ZIndex = 9,
+				Parent = preview,
+			})
+			round(orb, 999)
+		end
+	else
+		for index = 1, 5 do
+			local block = create("Frame", {
+				Position = UDim2.fromOffset(12 + ((index - 1) * 42), 18 + ((index % 2 == 0) and 8 or 0)),
+				Size = UDim2.fromOffset(38, 60),
+				BackgroundColor3 = Palette.SurfaceSoft,
+				BorderSizePixel = 0,
+				ZIndex = 9,
+				Parent = preview,
+			})
+			round(block, 10)
+			stroke(block, Palette.BorderSoft, 1, 0.45)
+			createLabel(block, {
+				Text = ({ "Discord", "Status", "Owners", "Links", "Team" })[index],
+				Font = Enum.Font.GothamSemibold,
+				TextSize = 8,
+				TextWrapped = true,
+				Size = UDim2.new(1, -8, 1, -8),
+				Position = UDim2.new(0, 4, 0, 4),
+				ZIndex = 10,
+			})
+		end
+	end
+
+	return preview
 end
 
 function Library:CreateWindow(options)
@@ -408,18 +519,16 @@ function Library:CreateWindow(options)
 		Text = title,
 		Font = Enum.Font.GothamSemibold,
 		TextSize = 11,
-		Size = UDim2.fromOffset(108, 26),
+		Size = UDim2.fromOffset(96, 26),
 		Position = UDim2.new(0, 6, 0, 6),
-		TextXAlignment = Enum.TextXAlignment.Center,
+		TextXAlignment = Enum.TextXAlignment.Left,
 		ZIndex = 8,
 	})
-	brandLabel.BackgroundColor3 = Palette.Surface
-	brandLabel.BackgroundTransparency = 0
-	round(brandLabel, 999)
+	brandLabel.BackgroundTransparency = 1
 
 	local tabsHolder = create("ScrollingFrame", {
-		Size = UDim2.new(1, -280, 0, 28),
-		Position = UDim2.new(0, 126, 0, 5),
+		Size = UDim2.new(1, -248, 0, 28),
+		Position = UDim2.new(0, 96, 0, 5),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		CanvasSize = UDim2.new(),
@@ -839,20 +948,47 @@ function Library:CreateWindow(options)
 	end
 
 	function windowObject:RenderHome()
-		clearChildren(homeCardsRow)
+		clearChildren(homeCardsRow, function(child)
+			return not child:IsA("UIListLayout")
+		end)
 		local currentDevice = getDeviceType()
 		local phone = currentDevice == "Phone"
-		local availableWidth = math.max(content.AbsoluteSize.X - (phone and 0 or 28), 280)
-		local cardWidth = phone and availableWidth or math.max(math.floor((availableWidth - 28) / 3), 280)
+		local availableWidth = math.max(content.AbsoluteSize.X - (phone and 0 or 34), 280)
+		local cardWidth = phone and availableWidth or math.max(math.floor((availableWidth - 28) / 3), 272)
 		if phone then
 			homeCardsLayout.FillDirection = Enum.FillDirection.Vertical
 		else
 			homeCardsLayout.FillDirection = Enum.FillDirection.Horizontal
 		end
 
-		local updatesCard, updatesInner = createHomeCard(homeCardsRow, cardWidth)
+		local function createCardWrapper(offset)
+			if phone then
+				return homeCardsRow
+			end
+			local wrapper = create("Frame", {
+				AutomaticSize = Enum.AutomaticSize.Y,
+				Size = UDim2.new(0, cardWidth, 0, 0),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				ZIndex = 8,
+				Parent = homeCardsRow,
+			})
+			local wrapperLayout = layout(wrapper, Enum.FillDirection.Vertical, Enum.HorizontalAlignment.Left, 0)
+			wrapperLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+			if offset > 0 then
+				create("Frame", {
+					Size = UDim2.new(1, 0, 0, offset),
+					BackgroundTransparency = 1,
+					BorderSizePixel = 0,
+					Parent = wrapper,
+				})
+			end
+			return wrapper
+		end
+
+		local updatesCard, updatesInner = createHomeCard(createCardWrapper(16), cardWidth)
 		updatesCard.Name = "UpdatesCard"
-		stroke(updatesCard, Palette.BorderSoft).Name = "CardStroke"
+		createHomePreview(updatesInner, "Updates")
 		createLabel(updatesInner, {
 			Text = "Updates",
 			Font = Enum.Font.GothamBold,
@@ -872,9 +1008,9 @@ function Library:CreateWindow(options)
 			createHomeItemBox(updatesInner, item.Title or "Update", item.Meta or "", item.Body or "")
 		end
 
-		local scriptsCard, scriptsInner = createHomeCard(homeCardsRow, cardWidth)
+		local scriptsCard, scriptsInner = createHomeCard(createCardWrapper(0), cardWidth)
 		scriptsCard.Name = "ScriptsCard"
-		stroke(scriptsCard, Palette.BorderSoft).Name = "CardStroke"
+		createHomePreview(scriptsInner, "Scripts")
 		createLabel(scriptsInner, {
 			Text = "Scripts",
 			Font = Enum.Font.GothamBold,
@@ -892,9 +1028,9 @@ function Library:CreateWindow(options)
 		})
 		renderScripts(scriptsInner)
 
-		local socialsCard, socialsInner = createHomeCard(homeCardsRow, cardWidth)
+		local socialsCard, socialsInner = createHomeCard(createCardWrapper(24), cardWidth)
 		socialsCard.Name = "SocialsCard"
-		stroke(socialsCard, Palette.BorderSoft).Name = "CardStroke"
+		createHomePreview(socialsInner, "Socials")
 		createLabel(socialsInner, {
 			Text = "Socials",
 			Font = Enum.Font.GothamBold,
@@ -977,6 +1113,7 @@ function Library:CreateWindow(options)
 		tab.Page.Visible = true
 		tab.Button.BackgroundColor3 = Palette.Text
 		tab.Button.TextColor3 = Palette.Background
+		heroButtons.Visible = tab.IsHome == true
 		windowObject.ActiveTab = tab
 	end
 

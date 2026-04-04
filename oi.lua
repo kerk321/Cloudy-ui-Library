@@ -14,8 +14,8 @@ CloudyUI.__index = CloudyUI
 
 local Theme = {
 	Background = Color3.fromRGB(3, 3, 4),
-	WindowTop = Color3.fromRGB(18, 18, 20),
-	WindowBottom = Color3.fromRGB(2, 2, 3),
+	WindowTop = Color3.fromRGB(8, 8, 10),
+	WindowBottom = Color3.fromRGB(6, 6, 8),
 	Sidebar = Color3.fromRGB(8, 8, 10),
 	Section = Color3.fromRGB(12, 12, 15),
 	SectionSoft = Color3.fromRGB(18, 18, 22),
@@ -371,8 +371,8 @@ local function makeCard(parent, radius)
 		BackgroundColor3 = Theme.Section,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, -2, 0, 0),
-		Position = UDim2.new(0, 1, 0, 0)
+		Size = UDim2.new(1, -6, 0, 0),
+		Position = UDim2.new(0, 3, 0, 0)
 	})
 
 	create("UIGradient", {
@@ -515,6 +515,20 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 	local item = controlObject(defaultColor or Theme.Accent)
 	local hue, saturation, value = Color3.toHSV(item.Value)
 	local draggingMode
+	local visibilityCallback
+
+	local function isPointInside(guiObject, position)
+		if not guiObject or not guiObject.AbsolutePosition or not guiObject.AbsoluteSize then
+			return false
+		end
+
+		local objectPosition = guiObject.AbsolutePosition
+		local objectSize = guiObject.AbsoluteSize
+		return position.X >= objectPosition.X
+			and position.X <= objectPosition.X + objectSize.X
+			and position.Y >= objectPosition.Y
+			and position.Y <= objectPosition.Y + objectSize.Y
+	end
 
 	local shell = create("Frame", {
 		Parent = parent,
@@ -745,10 +759,11 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		local color = hexToColor(rawText or hexBox.Text)
 		if not color then
 			hexBox.Text = colorToHex(item.Value)
-			return
+			return false
 		end
 		hue, saturation, value = Color3.toHSV(color)
 		updateVisuals()
+		return true
 	end
 
 	hexBox.FocusLost:Connect(function()
@@ -759,14 +774,39 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		pcall(function()
 			hexBox:ReleaseFocus(true)
 		end)
-		applyHex(typedText)
+		if applyHex(typedText) then
+			item:SetVisible(false)
+		end
 	end)
 	applyHexButton.MouseButton1Click:Connect(function()
 		local typedText = hexBox.Text
 		pcall(function()
 			hexBox:ReleaseFocus(true)
 		end)
-		applyHex(typedText)
+		if applyHex(typedText) then
+			item:SetVisible(false)
+		end
+	end)
+
+	UserInputService.InputBegan:Connect(function(input)
+		if not shell.Visible then
+			return
+		end
+
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
+			return
+		end
+
+		local position = input.Position
+		if isPointInside(shell, position) then
+			return
+		end
+
+		if isPointInside(item.TriggerObject, position) then
+			return
+		end
+
+		item:SetVisible(false)
 	end)
 
 	function item:Set(color)
@@ -780,12 +820,27 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 
 	function item:SetVisible(state)
 		shell.Visible = state == true
+		if visibilityCallback then
+			visibilityCallback(shell.Visible)
+		end
 		return shell.Visible
 	end
 
 	function item:ToggleVisible()
 		shell.Visible = not shell.Visible
+		if visibilityCallback then
+			visibilityCallback(shell.Visible)
+		end
 		return shell.Visible
+	end
+
+	function item:SetTriggerObject(triggerObject)
+		self.TriggerObject = triggerObject
+		return self.TriggerObject
+	end
+
+	function item:OnVisibilityChanged(callbackFunction)
+		visibilityCallback = callbackFunction
 	end
 
 	item.Frame = shell
@@ -1081,6 +1136,10 @@ function Section:AddToggle(options)
 			safeCallback(pickerOptions.Callback, color, item.Value)
 		end)
 		pickerObject.Frame.Parent = panel
+		pickerObject:SetTriggerObject(colorButton)
+		pickerObject:OnVisibilityChanged(function(state)
+			panel.Visible = state
+		end)
 
 		colorButton.MouseButton1Click:Connect(function()
 			local visible = pickerObject:ToggleVisible()
@@ -1202,11 +1261,15 @@ function Section:AddSlider(options)
 	track.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
+			local ratio = (input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X
+			setFromRatio(ratio)
 		end
 	end)
 
 	track.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			local ratio = (input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X
+			setFromRatio(ratio)
 			dragging = false
 		end
 	end)
@@ -1565,6 +1628,7 @@ function Section:AddColorPicker(options)
 		safeCallback(options.Callback, color)
 	end)
 	picker.Frame.Parent = shell
+	picker:SetTriggerObject(header)
 
 	function item:Set(value)
 		self.Value = picker:Set(value)
@@ -1726,7 +1790,7 @@ function CloudyUI:RefreshTabVisuals()
 		self.ResizeIcon.ImageColor3 = self.AccentColor
 	end
 	if self.SidebarAccent then
-		self.SidebarAccent.BackgroundColor3 = Color3.fromRGB(110, 110, 116)
+		self.SidebarAccent.BackgroundColor3 = Color3.fromRGB(86, 86, 92)
 	end
 end
 
@@ -2118,7 +2182,7 @@ function CloudyUI:CreateDefaultWindow(config)
 	})
 	addCorner(main, 10)
 	addStroke(main, Theme.Stroke, 1, 0.94)
-	addShadow(main, 0.28)
+	addShadow(main, 0.12)
 	create("UIGradient", {
 		Rotation = 90,
 		Color = ColorSequence.new({

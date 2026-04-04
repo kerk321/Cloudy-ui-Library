@@ -147,12 +147,12 @@ local function getProfile()
 	local isPhone = UserInputService.TouchEnabled and (viewport.X < 780 or viewport.Y < 780)
 	local isTablet = UserInputService.TouchEnabled and not isPhone
 
-	local widthScale = isPhone and 0.88 or (isTablet and 0.72 or 0.58)
-	local heightScale = isPhone and 0.78 or (isTablet and 0.74 or 0.68)
+	local widthScale = isPhone and 0.84 or (isTablet and 0.68 or 0.52)
+	local heightScale = isPhone and 0.74 or (isTablet and 0.7 or 0.64)
 
-	local width = math.clamp(math.floor(viewport.X * widthScale), isPhone and 300 or 640, isPhone and 390 or 980)
-	local height = math.clamp(math.floor(viewport.Y * heightScale), isPhone and 400 or 480, isPhone and 660 or 690)
-	local sidebarWidth = isPhone and 112 or (isTablet and 136 or 148)
+	local width = math.clamp(math.floor(viewport.X * widthScale), isPhone and 292 or 600, isPhone and 372 or 900)
+	local height = math.clamp(math.floor(viewport.Y * heightScale), isPhone and 388 or 450, isPhone and 620 or 650)
+	local sidebarWidth = isPhone and 104 or (isTablet and 126 or 138)
 
 	return {
 		Device = isPhone and "Phone" or (isTablet and "Tablet" or "PC"),
@@ -332,6 +332,7 @@ local function makeCard(parent, radius)
 	})
 
 	addCorner(card, radius or 18)
+	addStroke(card, Color3.fromRGB(54, 54, 60), 1, 0.08)
 	return card
 end
 
@@ -471,6 +472,7 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		Visible = false
 	})
 	addCorner(shell, 12)
+	addStroke(shell, Color3.fromRGB(56, 56, 62), 1, 0.14)
 	addPadding(shell, 10, 10, 10, 10)
 	addList(shell, 8, false)
 
@@ -496,9 +498,10 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		Position = UDim2.new(1, 0, 0.5, 0),
 		BackgroundColor3 = item.Value,
 		BorderSizePixel = 0,
-		Size = UDim2.fromOffset(34, 18)
+		Size = UDim2.fromOffset(28, 18)
 	})
-	addCorner(preview, 9)
+	addCorner(preview, 999)
+	addStroke(preview, Color3.fromRGB(230, 230, 232), 1, 0.32)
 
 	local pickerRow = create("Frame", {
 		Parent = shell,
@@ -685,8 +688,8 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		end
 	end)
 
-	local function applyHex()
-		local color = hexToColor(hexBox.Text)
+	local function applyHex(rawText)
+		local color = hexToColor(rawText or hexBox.Text)
 		if not color then
 			hexBox.Text = colorToHex(item.Value)
 			return
@@ -695,8 +698,23 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		updateVisuals()
 	end
 
-	hexBox.FocusLost:Connect(applyHex)
-	applyHexButton.MouseButton1Click:Connect(applyHex)
+	hexBox.FocusLost:Connect(function()
+		applyHex(hexBox.Text)
+	end)
+	applyHexButton.Activated:Connect(function()
+		local typedText = hexBox.Text
+		pcall(function()
+			hexBox:ReleaseFocus(true)
+		end)
+		applyHex(typedText)
+	end)
+	applyHexButton.MouseButton1Click:Connect(function()
+		local typedText = hexBox.Text
+		pcall(function()
+			hexBox:ReleaseFocus(true)
+		end)
+		applyHex(typedText)
+	end)
 
 	function item:Set(color)
 		if typeof(color) ~= "Color3" then
@@ -980,10 +998,23 @@ function Section:AddToggle(options)
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
 			LayoutOrder = -1,
-			Size = UDim2.new(0, 18, 0, 18),
+			Size = UDim2.new(0, 22, 0, 22),
 			Text = ""
 		})
-		addCorner(colorButton, 6)
+		addCorner(colorButton, 999)
+		addStroke(colorButton, Color3.fromRGB(230, 230, 232), 1, 0.22)
+		create("UIGradient", {
+			Rotation = 90,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+				ColorSequenceKeypoint.new(1, defaultColor)
+			}),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.72),
+				NumberSequenceKeypoint.new(1, 1)
+			}),
+			Parent = colorButton
+		})
 
 		local pickerObject = createColorPickerWidget(panel, defaultColor, function(color)
 			item:SetColor(color)
@@ -1604,8 +1635,17 @@ function CloudyUI:RefreshTabVisuals()
 	for _, tab in pairs(self.Tabs) do
 		local selected = self.CurrentTab == tab
 		if tab.NavButton then
+			tween(tab.NavButton, {
+				BackgroundColor3 = selected and Color3.fromRGB(19, 19, 22) or Color3.fromRGB(12, 12, 14)
+			}, 0.16)
+			if tab.NavStroke then
+				tab.NavStroke.Transparency = selected and 0.02 or 0.18
+			end
 			tab.NavDot.BackgroundTransparency = selected and 0 or 0.82
 			tab.NavTitle.TextColor3 = selected and Theme.Text or Theme.MutedText
+			if tab.NavMeta then
+				tab.NavMeta.TextColor3 = selected and Color3.fromRGB(184, 184, 190) or Color3.fromRGB(108, 108, 114)
+			end
 		end
 
 		if tab.QuickButton then
@@ -1730,18 +1770,40 @@ function CloudyUI:CreateTab(name, options)
 	if not options.HideSidebarButton then
 		local nav = create("TextButton", {
 			Parent = self.NavList,
-			BackgroundTransparency = 1,
+			BackgroundColor3 = Color3.fromRGB(12, 12, 14),
+			BackgroundTransparency = 0,
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
-			Size = UDim2.new(1, 0, 0, 38),
+			Size = UDim2.new(1, 0, 0, 64),
 			Text = ""
 		})
+		addCorner(nav, 14)
+		local navStroke = addStroke(nav, Color3.fromRGB(58, 58, 64), 1, 0.18)
+		create("UIGradient", {
+			Rotation = 90,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(17, 17, 19)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 12))
+			}),
+			Parent = nav
+		})
 
-		local dot = create("Frame", {
+		local iconWrap = create("Frame", {
 			Parent = nav,
 			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 0, 0.5, 0),
-			Size = UDim2.new(0, 4, 0, 18),
+			Position = UDim2.new(0, 12, 0.5, 0),
+			Size = UDim2.new(0, 32, 0, 32),
+			BackgroundColor3 = Color3.fromRGB(18, 18, 21),
+			BorderSizePixel = 0
+		})
+		addCorner(iconWrap, 999)
+		addStroke(iconWrap, Color3.fromRGB(60, 60, 66), 1, 0.28)
+
+		local dot = create("Frame", {
+			Parent = iconWrap,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			Size = UDim2.new(0, 10, 0, 10),
 			BackgroundColor3 = Theme.Text,
 			BackgroundTransparency = 0.82,
 			BorderSizePixel = 0
@@ -1749,22 +1811,34 @@ function CloudyUI:CreateTab(name, options)
 		addCorner(dot, 999)
 
 		local title = makeTextLabel(nav, {
-			Position = UDim2.new(0, 14, 0.5, 0),
-			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 54, 0, 13),
+			AnchorPoint = Vector2.new(0, 0),
 			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -18, 0, 16),
+			Size = UDim2.new(1, -66, 0, 16),
 			Text = name,
 			TextColor3 = Theme.MutedText,
 			TextSize = 14,
 			FontFace = Font.fromEnum(Enum.Font.GothamMedium)
 		})
 
+		local meta = makeTextLabel(nav, {
+			Position = UDim2.new(0, 54, 0, 34),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, -66, 0, 12),
+			Text = options.NavDescription or ("Open " .. string.lower(name)),
+			TextColor3 = Color3.fromRGB(108, 108, 114),
+			TextSize = 11,
+			TextWrapped = false
+		})
+
 		nav.MouseButton1Click:Connect(function()
 			self:SelectTab(name)
 		end)
 		tab.NavButton = nav
+		tab.NavStroke = navStroke
 		tab.NavDot = dot
 		tab.NavTitle = title
+		tab.NavMeta = meta
 	end
 
 	if not options.HideQuickButton then

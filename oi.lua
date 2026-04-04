@@ -1791,214 +1791,54 @@ function CloudyUI:ApplyResponsiveLayout(forceCenter)
 end
 
 function CloudyUI:BuildHome(tab)
-	tab:AddCustomCard(function(card, container)
-		container.AutomaticSize = Enum.AutomaticSize.None
-		container.Size = UDim2.new(1, 0, 0, self.Profile.IsPhone and 236 or 244)
-
-		local backdrop = create("ImageLabel", {
-			Parent = card,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Size = UDim2.new(1, 0, 1, 0),
-			Image = "rbxassetid://5553946656",
-			ScaleType = Enum.ScaleType.Tile,
-			TileSize = UDim2.fromOffset(96, 96),
-			ImageColor3 = Color3.fromRGB(26, 26, 30),
-			ImageTransparency = 0.82
-		})
-		addCorner(backdrop, 18)
-
-		local fade = create("Frame", {
-			Parent = card,
-			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-			BackgroundTransparency = 0.22,
-			BorderSizePixel = 0,
-			Size = UDim2.new(1, 0, 1, 0)
-		})
-		addCorner(fade, 18)
-
-		local overlay = create("Frame", {
-			Parent = container,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Size = UDim2.new(1, 0, 1, 0)
-		})
-
-		local profileCard = create("Frame", {
-			Parent = overlay,
-			BackgroundColor3 = Color3.fromRGB(10, 10, 12),
-			BackgroundTransparency = 0.12,
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, 0, 0, 0),
-			Size = UDim2.new(self.Profile.IsPhone and 1 or 0, self.Profile.IsPhone and 0 or 246, 0, self.Profile.IsPhone and 92 or 110)
-		})
-		addCorner(profileCard, 14)
-
-		local avatar = create("ImageLabel", {
-			Parent = profileCard,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, 14, 0, 14),
-			Size = UDim2.fromOffset(self.Profile.IsPhone and 56 or 70, self.Profile.IsPhone and 56 or 70),
-			Image = getAvatarUrl(LocalPlayer.UserId)
-		})
-		addCorner(avatar, 999)
-
-		local profileName = makeTextLabel(profileCard, {
-			Position = UDim2.new(0, self.Profile.IsPhone and 82 or 96, 0, 16),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -(self.Profile.IsPhone and 94 or 106), 0, 20),
-			Text = LocalPlayer.DisplayName,
-			FontFace = Font.fromEnum(Enum.Font.GothamBold),
-			TextSize = self.Profile.IsPhone and 14 or 16,
-			TextScaled = true,
-			TextWrapped = false
-		})
-		addTextConstraint(profileName, 10, self.Profile.IsPhone and 14 or 16)
-
-		makeTextLabel(profileCard, {
-			Position = UDim2.new(0, self.Profile.IsPhone and 82 or 96, 0, self.Profile.IsPhone and 40 or 46),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -(self.Profile.IsPhone and 96 or 108), 0, 14),
-			Text = "@" .. LocalPlayer.Name,
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-
-		makeTextLabel(profileCard, {
-			Position = UDim2.new(0, self.Profile.IsPhone and 82 or 96, 0, self.Profile.IsPhone and 58 or 66),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -(self.Profile.IsPhone and 96 or 108), 0, 14),
-			Text = tostring(LocalPlayer.UserId),
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-
-		local badge = create("Frame", {
-			Parent = profileCard,
-			BackgroundColor3 = Color3.fromRGB(20, 20, 24),
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, self.Profile.IsPhone and 82 or 96, 0, self.Profile.IsPhone and 74 or 82),
-			Size = UDim2.fromOffset(84, 20)
-		})
-		addCorner(badge, 999)
-
-		makeTextLabel(badge, {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -10, 0, 14),
-			TextXAlignment = Enum.TextXAlignment.Center,
-			Text = "HOME",
-			TextSize = 11
-		})
-
-		local activity = create("Frame", {
-			Parent = overlay,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, 0, 0, self.Profile.IsPhone and 108 or 130),
-			Size = UDim2.new(self.Profile.IsPhone and 0.54 or 0.5, -10, 0, self.Profile.IsPhone and 112 or 96)
-		})
-		addList(activity, 8, false)
-
-		for _, entry in ipairs({"Joined", "Chatted \"Hello!\"", "Kicked", "Joined", "Left", "Character Reset"}) do
-			makeTextLabel(activity, {
-				Text = entry,
-				TextColor3 = Theme.MutedText,
-				TextSize = self.Profile.IsPhone and 18 or 14,
-				FontFace = Font.fromEnum(Enum.Font.Gotham)
-			})
-		end
-
-		local stackWrap = create("Frame", {
-			Parent = overlay,
-			AnchorPoint = Vector2.new(1, 1),
-			Position = UDim2.new(1, 0, 1, 0),
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Size = UDim2.new(self.Profile.IsPhone and 0.42 or 0.33, 0, 1, 0)
-		})
-		addList(stackWrap, 8, false)
-
-		local function makeStackCard(offset, alpha)
-			local stack = create("Frame", {
-				Parent = stackWrap,
-				BackgroundColor3 = Color3.fromRGB(16, 16, 19),
-				BackgroundTransparency = alpha,
-				BorderSizePixel = 0,
-				Position = UDim2.new(0, offset, 0, 0),
-				Size = UDim2.new(1, -offset, 0, self.Profile.IsPhone and 56 or 64)
-			})
-			addCorner(stack, 12)
-			return stack
-		end
-
-		local backCard = makeStackCard(22, 0.34)
-		local midCard = makeStackCard(10, 0.18)
-		local frontCard = makeStackCard(0, 0.04)
-
-		for _, stack in ipairs({backCard, midCard, frontCard}) do
-			local stackAvatar = create("ImageLabel", {
-				Parent = stack,
-				BackgroundTransparency = 1,
-				BorderSizePixel = 0,
-				Position = UDim2.new(0, 12, 0.5, -(self.Profile.IsPhone and 14 or 16)),
-				Size = UDim2.fromOffset(self.Profile.IsPhone and 28 or 32, self.Profile.IsPhone and 28 or 32),
-				Image = getAvatarUrl(LocalPlayer.UserId)
-			})
-			addCorner(stackAvatar, 999)
-
-			makeTextLabel(stack, {
-				Position = UDim2.new(0, self.Profile.IsPhone and 48 or 54, 0, 12),
-				AutomaticSize = Enum.AutomaticSize.None,
-				Size = UDim2.new(1, -84, 0, 14),
-				Text = LocalPlayer.DisplayName,
-				FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
-				TextSize = 12
-			})
-
-			makeTextLabel(stack, {
-				Position = UDim2.new(0, self.Profile.IsPhone and 48 or 54, 0, 28),
-				AutomaticSize = Enum.AutomaticSize.None,
-				Size = UDim2.new(1, -84, 0, 12),
-				Text = "@" .. LocalPlayer.Name,
-				TextColor3 = Theme.MutedText,
-				TextSize = 10
-			})
-
-			makeTextLabel(stack, {
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.new(1, -12, 0, 14),
-				AutomaticSize = Enum.AutomaticSize.None,
-				Size = UDim2.new(0, 50, 0, 12),
-				Text = "Guest",
-				TextColor3 = Theme.MutedText,
-				TextSize = 10,
-				TextXAlignment = Enum.TextXAlignment.Right
-			})
-		end
-	end)
-
-	local shortcuts = tab:AddSection("Quick Start", "The layout follows the reference more closely now: profile and actions on the left, activity in the middle, and stacked preview cards on the right.")
-	shortcuts:AddButton({
+	local overview = tab:AddSection("Home", "This page opens by default and stays available from the Open Home button on the left.")
+	overview:AddLabel("Display Name: " .. LocalPlayer.DisplayName)
+	overview:AddLabel("Username: @" .. LocalPlayer.Name)
+	overview:AddLabel("User ID: " .. tostring(LocalPlayer.UserId))
+	overview:AddLabel("Executor: " .. getExecutorName())
+	overview:AddDivider("Open")
+	overview:AddButton({
 		Title = "Open Scripts",
-		Description = "Jump to the control panel.",
+		Description = "Jump to the script controls.",
 		Callback = function()
 			self:SelectTab("Scripts")
 		end
 	})
-	shortcuts:AddButton({
+	overview:AddButton({
+		Title = "Open Updates",
+		Description = "See what changed in this build.",
+		Callback = function()
+			self:SelectTab("Updates")
+		end
+	})
+	overview:AddButton({
 		Title = "Open Feedback",
-		Description = "Open the live feedback form.",
+		Description = "Send feedback to your API.",
 		Callback = function()
 			self:SelectTab("Feedback")
 		end
 	})
 
-	local notes = tab:AddSection("Layout Notes", "This keeps the panel darker, flatter, and less border-heavy.")
-	notes:AddParagraph("Responsive", "Phone and PC sizing still works, but the surfaces stay flatter and darker.")
-	notes:AddParagraph("Navigation", "Updates, Scripts, Feedback, and Settings stay on the left, with quick pills on the lower right.")
+	local status = tab:AddSection("Status", "Simple visible content so Home is never blank.")
+	status:AddParagraph("Layout", "Home is hidden from the sidebar and bottom row. You open it from the profile card with Open Home.")
+	status:AddParagraph("Background", "The translucent back image layer has been removed so the window stays solid and readable.")
+	status:AddParagraph("Responsive", "Phone sizing still works, but Home now uses the same section cards as the other tabs so it renders reliably.")
+
+	local actions = tab:AddSection("Quick Actions", "Use these to test that the window and tab switching are working.")
+	actions:AddButton({
+		Title = "Hide Window",
+		Description = "Toggle the main panel closed. Use the floating image button to open it again.",
+		Callback = function()
+			self:ToggleVisible()
+		end
+	})
+	actions:AddButton({
+		Title = "Open Settings",
+		Description = "Go to the settings tab.",
+		Callback = function()
+			self:SelectTab("Settings")
+		end
+	})
 end
 
 function CloudyUI:CreateDefaultWindow(config)
@@ -2051,45 +1891,6 @@ function CloudyUI:CreateDefaultWindow(config)
 		Parent = main
 	})
 
-	local gameBackground = create("ImageLabel", {
-		Parent = main,
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 1, 0),
-		Image = getGameImage(),
-		ScaleType = Enum.ScaleType.Crop,
-		ImageTransparency = 0.78
-	})
-	gameBackground.Visible = not profile.IsPhone
-	addCorner(gameBackground, 10)
-
-	local gameFade = create("Frame", {
-		Parent = main,
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-		BackgroundTransparency = 0.38,
-		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 1, 0)
-	})
-	addCorner(gameFade, 10)
-
-	local bottomFade = create("Frame", {
-		Parent = main,
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-		BackgroundTransparency = 0.08,
-		BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, 0),
-		Size = UDim2.new(1, 0, 0.48, 0)
-	})
-	create("UIGradient", {
-		Rotation = 90,
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(1, 0.05)
-		}),
-		Parent = bottomFade
-	})
-
 	local toggleButton = create("ImageButton", {
 		Parent = screen,
 		BackgroundColor3 = Color3.fromRGB(7, 7, 9),
@@ -2122,7 +1923,7 @@ function CloudyUI:CreateDefaultWindow(config)
 	})
 
 	makeTextLabel(topbar, {
-		Text = config.Title or "Cloudy Control",
+		Text = config.Title or "Cloudy Developer",
 		FontFace = Font.fromEnum(Enum.Font.GothamBold),
 		TextSize = 16,
 		AutomaticSize = Enum.AutomaticSize.None,
@@ -2312,7 +2113,7 @@ function CloudyUI:CreateDefaultWindow(config)
 		selfObject:ApplyResponsiveLayout(false)
 	end)
 
-	local homeTab = selfObject:CreateTab("Home", {HideSidebarButton = true, QuickName = "Home"})
+	local homeTab = selfObject:CreateTab("Home", {HideSidebarButton = true, HideQuickButton = true})
 	local updatesTab = selfObject:CreateTab("Updates", {HideQuickButton = true})
 	local scriptsTab = selfObject:CreateTab("Scripts", {HideQuickButton = true})
 	local feedbackTab = selfObject:CreateTab("Feedback", {HideQuickButton = true})

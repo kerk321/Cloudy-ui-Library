@@ -371,26 +371,40 @@ Bracket.Utilities = {
 		end
 	end,
 	ConfigsToList = function(FolderName)
-		if not isfolder(FolderName) then makefolder(FolderName) end
-		if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
-		if not isfile(`{FolderName}\\Autoloads.json`) then writefile(`{FolderName}\\Autoloads.json`, "[]") end
-
-		local Autoloads = HttpService:JSONDecode(readfile(`{FolderName}\\Autoloads.json`))
-		local Autoload = Autoloads[tostring(game.GameId)]
-
-		local Configs = {}
-		for Index, Config in pairs(listfiles(`{FolderName}\\Configs`) or {}) do
-			Config = Config:gsub(`{FolderName}\\Configs\\`, "")
-			Config = Config:gsub(".json", "")
-
-			Configs[#Configs + 1] = {
-				Name = Config,
-				Mode = "Button",
-				Value = Config == Autoload
-			}
+		-- Guard: some executors do not expose file system APIs
+		if type(isfolder) ~= "function" or type(makefolder) ~= "function"
+			or type(isfile) ~= "function" or type(writefile) ~= "function"
+			or type(readfile) ~= "function" or type(listfiles) ~= "function" then
+			return {}
 		end
 
-		return Configs
+		local ok, result = pcall(function()
+			if not isfolder(FolderName) then makefolder(FolderName) end
+			if not isfolder(`{FolderName}\\Configs`) then makefolder(`{FolderName}\\Configs`) end
+			if not isfile(`{FolderName}\\Autoloads.json`) then writefile(`{FolderName}\\Autoloads.json`, "[]") end
+
+			local Autoloads = HttpService:JSONDecode(readfile(`{FolderName}\\Autoloads.json`))
+			local Autoload = Autoloads[tostring(game.GameId)]
+
+			local Configs = {}
+			for Index, Config in pairs(listfiles(`{FolderName}\\Configs`) or {}) do
+				Config = Config:gsub(`{FolderName}\\Configs\\`, "")
+				Config = Config:gsub(".json", "")
+
+				Configs[#Configs + 1] = {
+					Name = Config,
+					Mode = "Button",
+					Value = Config == Autoload
+				}
+			end
+
+			return Configs
+		end)
+
+		if ok and type(result) == "table" then
+			return result
+		end
+		return {}
 	end
 }
 Bracket.Instances = {
@@ -4347,6 +4361,7 @@ function Bracket.Window(Self, Window)
 	-- ======================================================
 	-- AUTO SETTINGS TAB (always last)
 	-- ======================================================
+	pcall(function()
 	local _SettingsTab = Window:Tab({ Name = "Settings" })
 	_SettingsTab.ButtonInstance.LayoutOrder = math.huge
 
@@ -4650,6 +4665,7 @@ function Bracket.Window(Self, Window)
 			setclipboard(_UserHwid)
 		end,
 	})
+	end) -- end pcall for auto settings tab
 
 	return Window
 end

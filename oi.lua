@@ -142,6 +142,13 @@ local function getGameImage()
 	return ("rbxthumb://type=GameIcon&id=%s&w=512&h=512"):format(tostring(game.PlaceId))
 end
 
+local function getGameImageForPlace(placeId)
+	if placeId and tostring(placeId) ~= "" then
+		return ("rbxthumb://type=GameIcon&id=%s&w=512&h=512"):format(tostring(placeId))
+	end
+	return "rbxasset://textures/ui/GuiImagePlaceholder.png"
+end
+
 local function getProfile()
 	local viewport = getViewportSize()
 	local isPhone = UserInputService.TouchEnabled and (viewport.X < 780 or viewport.Y < 780)
@@ -313,13 +320,59 @@ local function getAvatarUrl(userId)
 	return ""
 end
 
+local function executeScriptEntry(entry)
+	entry = entry or {}
+
+	if entry.Url and entry.Url ~= "" then
+		local ok, response = pcall(function()
+			return game:HttpGet(entry.Url, true)
+		end)
+		if not ok or type(response) ~= "string" or response:gsub("%s+", "") == "" then
+			return false, "Failed to download script"
+		end
+
+		local chunk, loadError = loadstring(response)
+		if not chunk then
+			return false, tostring(loadError)
+		end
+
+		local ran, runError = pcall(chunk)
+		if not ran then
+			return false, tostring(runError)
+		end
+
+		return true
+	end
+
+	if entry.File and entry.File ~= "" and type(readfile) == "function" then
+		local ok, content = pcall(readfile, entry.File)
+		if ok and type(content) == "string" and content:gsub("%s+", "") ~= "" then
+			local chunk, loadError = loadstring(content)
+			if not chunk then
+				return false, tostring(loadError)
+			end
+
+			local ran, runError = pcall(chunk)
+			if not ran then
+				return false, tostring(runError)
+			end
+
+			return true
+		end
+		return false, "Missing or empty script file"
+	end
+
+	return false, "No loader configured"
+end
+
 local function makeCard(parent, radius)
 	local card = create("Frame", {
 		Parent = parent,
 		BackgroundColor3 = Theme.Section,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, 0, 0, 0)
+		Size = UDim2.new(1, -2, 0, 0),
+		Position = UDim2.new(0, 1, 0, 0)
 	})
 
 	create("UIGradient", {
@@ -940,6 +993,7 @@ function Section:AddToggle(options)
 	addList(panel, 8, false)
 
 	local colorButton
+	local colorButtonGradient
 	local colorPickerObject
 	local draggingBar
 
@@ -976,6 +1030,12 @@ function Section:AddToggle(options)
 		self.Color = color
 		if colorButton then
 			colorButton.BackgroundColor3 = color
+			if colorButtonGradient then
+				colorButtonGradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+					ColorSequenceKeypoint.new(1, color)
+				})
+			end
 		end
 		if self.Value then
 			fill.BackgroundColor3 = color
@@ -1003,7 +1063,7 @@ function Section:AddToggle(options)
 		})
 		addCorner(colorButton, 999)
 		addStroke(colorButton, Color3.fromRGB(230, 230, 232), 1, 0.22)
-		create("UIGradient", {
+		colorButtonGradient = create("UIGradient", {
 			Rotation = 90,
 			Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
@@ -1638,10 +1698,13 @@ function CloudyUI:RefreshTabVisuals()
 			tween(tab.NavButton, {
 				BackgroundColor3 = selected and Color3.fromRGB(19, 19, 22) or Color3.fromRGB(12, 12, 14)
 			}, 0.16)
-			if tab.NavStroke then
-				tab.NavStroke.Transparency = selected and 0.02 or 0.18
+			if tab.NavIconWrap then
+				tween(tab.NavIconWrap, {
+					BackgroundColor3 = selected and Color3.fromRGB(28, 28, 31) or Color3.fromRGB(18, 18, 21)
+				}, 0.16)
 			end
-			tab.NavDot.BackgroundTransparency = selected and 0 or 0.82
+			tab.NavDot.BackgroundTransparency = selected and 0.12 or 0.58
+			tab.NavDot.BackgroundColor3 = selected and Color3.fromRGB(170, 170, 176) or Color3.fromRGB(112, 112, 118)
 			tab.NavTitle.TextColor3 = selected and Theme.Text or Theme.MutedText
 			if tab.NavMeta then
 				tab.NavMeta.TextColor3 = selected and Color3.fromRGB(184, 184, 190) or Color3.fromRGB(108, 108, 114)
@@ -1663,7 +1726,7 @@ function CloudyUI:RefreshTabVisuals()
 		self.ResizeIcon.ImageColor3 = self.AccentColor
 	end
 	if self.SidebarAccent then
-		self.SidebarAccent.BackgroundColor3 = self.AccentColor
+		self.SidebarAccent.BackgroundColor3 = Color3.fromRGB(110, 110, 116)
 	end
 end
 
@@ -1774,11 +1837,10 @@ function CloudyUI:CreateTab(name, options)
 			BackgroundTransparency = 0,
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
-			Size = UDim2.new(1, 0, 0, 64),
+			Size = UDim2.new(1, 0, 0, 60),
 			Text = ""
 		})
 		addCorner(nav, 14)
-		local navStroke = addStroke(nav, Color3.fromRGB(58, 58, 64), 1, 0.18)
 		create("UIGradient", {
 			Rotation = 90,
 			Color = ColorSequence.new({
@@ -1792,42 +1854,41 @@ function CloudyUI:CreateTab(name, options)
 			Parent = nav,
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.new(0, 12, 0.5, 0),
-			Size = UDim2.new(0, 32, 0, 32),
+			Size = UDim2.new(0, 24, 0, 24),
 			BackgroundColor3 = Color3.fromRGB(18, 18, 21),
 			BorderSizePixel = 0
 		})
 		addCorner(iconWrap, 999)
-		addStroke(iconWrap, Color3.fromRGB(60, 60, 66), 1, 0.28)
 
 		local dot = create("Frame", {
 			Parent = iconWrap,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.new(0.5, 0, 0.5, 0),
-			Size = UDim2.new(0, 10, 0, 10),
-			BackgroundColor3 = Theme.Text,
-			BackgroundTransparency = 0.82,
+			Size = UDim2.new(0, 8, 0, 8),
+			BackgroundColor3 = Color3.fromRGB(112, 112, 118),
+			BackgroundTransparency = 0.58,
 			BorderSizePixel = 0
 		})
 		addCorner(dot, 999)
 
 		local title = makeTextLabel(nav, {
-			Position = UDim2.new(0, 54, 0, 13),
+			Position = UDim2.new(0, 44, 0, 12),
 			AnchorPoint = Vector2.new(0, 0),
 			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -66, 0, 16),
+			Size = UDim2.new(1, -52, 0, 15),
 			Text = name,
 			TextColor3 = Theme.MutedText,
-			TextSize = 14,
+			TextSize = 13,
 			FontFace = Font.fromEnum(Enum.Font.GothamMedium)
 		})
 
 		local meta = makeTextLabel(nav, {
-			Position = UDim2.new(0, 54, 0, 34),
+			Position = UDim2.new(0, 44, 0, 29),
 			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -66, 0, 12),
+			Size = UDim2.new(1, -52, 0, 12),
 			Text = options.NavDescription or ("Open " .. string.lower(name)),
 			TextColor3 = Color3.fromRGB(108, 108, 114),
-			TextSize = 11,
+			TextSize = 10,
 			TextWrapped = false
 		})
 
@@ -1835,7 +1896,7 @@ function CloudyUI:CreateTab(name, options)
 			self:SelectTab(name)
 		end)
 		tab.NavButton = nav
-		tab.NavStroke = navStroke
+		tab.NavIconWrap = iconWrap
 		tab.NavDot = dot
 		tab.NavTitle = title
 		tab.NavMeta = meta
@@ -2347,65 +2408,102 @@ function CloudyUI:CreateDefaultWindow(config)
 	updates:AddParagraph("Layout", "The content now fills left and right columns instead of a single stack.")
 	updates:AddParagraph("Borders", "Only buttons and dropdowns keep clear borders. Most controls stay flat.")
 
-	local scriptsMain = scriptsTab:AddSection("Main Controls", "Primary actions for your script page.", {Column = "left"})
-	scriptsMain:AddButton({
-		Title = "Run Example Action",
-		Description = "Swap this callback with your real script logic.",
-		Callback = function()
-			warn("CloudyUI example action fired")
-		end
-	})
-	local exampleToggle = scriptsMain:AddToggle({
-		Title = "Enable Feature",
-		Description = "Filled-box toggle with attached color picker.",
-		Default = true,
-		Callback = function(value)
-			warn("Toggle value:", value)
-		end
-	})
-	exampleToggle:Colorpicker({
-		Title = "Toggle Fill Color",
-		Default = Color3.fromRGB(235, 235, 236),
-		Callback = function(color)
-			warn("Toggle color:", color)
-		end
-	})
-	scriptsMain:AddSlider({
-		Title = "Power",
-		Min = 0,
-		Max = 100,
-		Default = 35,
-		Suffix = "%",
-		Callback = function(value)
-			warn("Slider value:", value)
-		end
-	})
+	local scriptEntries = {
+		{
+			Name = "Da Hood",
+			PlaceId = 2788229376,
+			Column = "left"
+		},
+		{
+			Name = "Tha Bronx 3",
+			File = "bronx/Bronx.lua",
+			Column = "right"
+		},
+		{
+			Name = "Philly Streets 2",
+			File = "Philly.lua",
+			Column = "left"
+		},
+		{
+			Name = "Central Streets",
+			Column = "right"
+		},
+		{
+			Name = "Street Life Remastered",
+			File = "streelife.lua",
+			Column = "left"
+		}
+	}
 
-	local scriptsSide = scriptsTab:AddSection("Extra Controls", "Secondary tools stay on the right side.", {Column = "right"})
-	scriptsSide:AddDropdown({
-		Title = "Mode",
-		Items = {"Silent", "Balanced", "Aggressive"},
-		Default = "Balanced",
-		Callback = function(value)
-			warn("Dropdown value:", value)
-		end
-	})
-	scriptsSide:AddTextbox({
-		Title = "Notes",
-		Placeholder = "Write a note or command",
-		Default = "",
-		Callback = function(value)
-			warn("Textbox value:", value)
-		end
-	})
-	scriptsSide:AddKeybind({
-		Title = "Hotkey",
-		Default = "RightShift",
-		Mode = "Toggle",
-		Callback = function(value)
-			warn("Keybind fired:", value)
-		end
-	})
+	for _, entry in ipairs(scriptEntries) do
+		scriptsTab:AddCustomCard(function(card, container)
+			container.AutomaticSize = Enum.AutomaticSize.None
+			container.Size = UDim2.new(1, 0, 0, 188)
+
+			local image = create("ImageLabel", {
+				Parent = container,
+				BackgroundColor3 = Theme.Input,
+				BorderSizePixel = 0,
+				Position = UDim2.new(0, 0, 0, 0),
+				Size = UDim2.new(1, 0, 0, 112),
+				Image = getGameImageForPlace(entry.PlaceId),
+				ScaleType = Enum.ScaleType.Crop
+			})
+			addCorner(image, 12)
+
+			local title = makeTextLabel(container, {
+				Position = UDim2.new(0, 0, 0, 122),
+				AutomaticSize = Enum.AutomaticSize.None,
+				Size = UDim2.new(1, 0, 0, 18),
+				Text = entry.Name,
+				FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+				TextSize = 15,
+				TextWrapped = false
+			})
+
+			local status = makeTextLabel(container, {
+				Position = UDim2.new(0, 0, 0, 142),
+				AutomaticSize = Enum.AutomaticSize.None,
+				Size = UDim2.new(1, 0, 0, 14),
+				Text = entry.File and "Ready to execute" or "Script not configured yet",
+				TextColor3 = Theme.MutedText,
+				TextSize = 11,
+				TextWrapped = false
+			})
+
+			local executeButton = create("TextButton", {
+				Parent = container,
+				BackgroundColor3 = Theme.Input,
+				BorderSizePixel = 0,
+				AutoButtonColor = false,
+				Position = UDim2.new(0, 0, 0, 162),
+				Size = UDim2.new(1, 0, 0, 30),
+				Text = "",
+			})
+			addCorner(executeButton, 10)
+			addStroke(executeButton, Theme.Stroke, 1, 0.14)
+
+			makeTextLabel(executeButton, {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				AutomaticSize = Enum.AutomaticSize.None,
+				Size = UDim2.new(1, -12, 0, 16),
+				Text = "Execute",
+				TextXAlignment = Enum.TextXAlignment.Center,
+				FontFace = Font.fromEnum(Enum.Font.GothamMedium),
+				TextSize = 13
+			})
+
+			executeButton.MouseButton1Click:Connect(function()
+				local ok, message = executeScriptEntry(entry)
+				if ok then
+					status.Text = "Executed"
+				else
+					status.Text = tostring(message)
+				end
+			end)
+		end, {Column = entry.Column})
+	end
 
 	local settings = settingsTab:AddSection("Appearance", "Accent changes only affect active UI parts.", {Column = "left"})
 	settings:AddColorPicker({

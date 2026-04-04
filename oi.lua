@@ -147,12 +147,12 @@ local function getProfile()
 	local isPhone = UserInputService.TouchEnabled and (viewport.X < 780 or viewport.Y < 780)
 	local isTablet = UserInputService.TouchEnabled and not isPhone
 
-	local widthScale = isPhone and 0.90 or (isTablet and 0.76 or 0.66)
-	local heightScale = isPhone and 0.78 or (isTablet and 0.76 or 0.72)
+	local widthScale = isPhone and 0.88 or (isTablet and 0.72 or 0.58)
+	local heightScale = isPhone and 0.78 or (isTablet and 0.74 or 0.68)
 
-	local width = math.clamp(math.floor(viewport.X * widthScale), isPhone and 300 or 680, isPhone and 390 or 1040)
-	local height = math.clamp(math.floor(viewport.Y * heightScale), isPhone and 400 or 500, isPhone and 660 or 720)
-	local sidebarWidth = isPhone and 120 or (isTablet and 146 or 172)
+	local width = math.clamp(math.floor(viewport.X * widthScale), isPhone and 300 or 640, isPhone and 390 or 980)
+	local height = math.clamp(math.floor(viewport.Y * heightScale), isPhone and 400 or 480, isPhone and 660 or 690)
+	local sidebarWidth = isPhone and 112 or (isTablet and 136 or 148)
 
 	return {
 		Device = isPhone and "Phone" or (isTablet and "Tablet" or "PC"),
@@ -324,15 +324,14 @@ local function makeCard(parent, radius)
 
 	create("UIGradient", {
 		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(19, 19, 23)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 12))
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 16, 18)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(9, 9, 11))
 		}),
 		Rotation = 90,
 		Parent = card
 	})
 
-	addCorner(card, radius or 16)
-	addStroke(card, Theme.Stroke, 1, 0.88)
+	addCorner(card, radius or 18)
 	return card
 end
 
@@ -361,7 +360,7 @@ end
 local function makeInputBox(parent, props)
 	local input = create("TextBox", {
 		Parent = parent,
-		BackgroundColor3 = Theme.Input,
+		BackgroundColor3 = Theme.InputSoft,
 		BorderSizePixel = 0,
 		ClearTextOnFocus = false,
 		FontFace = Font.fromEnum(Enum.Font.Gotham),
@@ -377,7 +376,6 @@ local function makeInputBox(parent, props)
 	})
 
 	addCorner(input, 10)
-	addStroke(input, Theme.Stroke, 1, 0.12)
 
 	for key, value in pairs(props or {}) do
 		input[key] = value
@@ -431,6 +429,299 @@ local function controlObject(initialValue)
 	return object
 end
 
+local function colorToHex(color)
+	return string.format("#%02X%02X%02X",
+		math.floor(color.R * 255 + 0.5),
+		math.floor(color.G * 255 + 0.5),
+		math.floor(color.B * 255 + 0.5)
+	)
+end
+
+local function hexToColor(text)
+	local value = tostring(text or ""):gsub("#", "")
+	if #value == 3 then
+		value = value:sub(1, 1):rep(2) .. value:sub(2, 2):rep(2) .. value:sub(3, 3):rep(2)
+	end
+
+	if #value ~= 6 then
+		return nil
+	end
+
+	local red = tonumber(value:sub(1, 2), 16)
+	local green = tonumber(value:sub(3, 4), 16)
+	local blue = tonumber(value:sub(5, 6), 16)
+	if not red or not green or not blue then
+		return nil
+	end
+
+	return Color3.fromRGB(red, green, blue)
+end
+
+local function createColorPickerWidget(parent, defaultColor, callback)
+	local item = controlObject(defaultColor or Theme.Accent)
+	local hue, saturation, value = Color3.toHSV(item.Value)
+	local draggingMode
+
+	local shell = create("Frame", {
+		Parent = parent,
+		BackgroundColor3 = Theme.SectionSoft,
+		BorderSizePixel = 0,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(1, 0, 0, 0),
+		Visible = false
+	})
+	addCorner(shell, 12)
+	addPadding(shell, 10, 10, 10, 10)
+	addList(shell, 8, false)
+
+	local titleRow = create("Frame", {
+		Parent = shell,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 18)
+	})
+
+	makeTextLabel(titleRow, {
+		Text = "Pick Color",
+		TextColor3 = Theme.MutedText,
+		TextSize = 12,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Size = UDim2.new(1, -60, 0, 16),
+		Position = UDim2.new(0, 0, 0, 1)
+	})
+
+	local preview = create("Frame", {
+		Parent = titleRow,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
+		BackgroundColor3 = item.Value,
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(34, 18)
+	})
+	addCorner(preview, 9)
+
+	local pickerRow = create("Frame", {
+		Parent = shell,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 118)
+	})
+
+	local colorArea = create("Frame", {
+		Parent = pickerRow,
+		BackgroundColor3 = Color3.fromHSV(hue, 1, 1),
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, -28, 1, 0)
+	})
+	addCorner(colorArea, 10)
+
+	local whiteLayer = create("Frame", {
+		Parent = colorArea,
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 1, 0)
+	})
+	addCorner(whiteLayer, 10)
+	create("UIGradient", {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+		}),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(1, 1)
+		}),
+		Rotation = 0,
+		Parent = whiteLayer
+	})
+
+	local blackLayer = create("Frame", {
+		Parent = colorArea,
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 1, 0)
+	})
+	addCorner(blackLayer, 10)
+	create("UIGradient", {
+		Color = ColorSequence.new(Color3.new(0, 0, 0), Color3.new(0, 0, 0)),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(1, 0)
+		}),
+		Rotation = 90,
+		Parent = blackLayer
+	})
+
+	local areaCursor = create("Frame", {
+		Parent = colorArea,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(10, 10)
+	})
+	addCorner(areaCursor, 999)
+	addStroke(areaCursor, Color3.new(0, 0, 0), 1, 0.25)
+
+	local hueBar = create("Frame", {
+		Parent = pickerRow,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(14, 118)
+	})
+	addCorner(hueBar, 999)
+	create("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+			ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 255, 0)),
+			ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+			ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),
+			ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+		}),
+		Parent = hueBar
+	})
+
+	local hueCursor = create("Frame", {
+		Parent = hueBar,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 4, 0, 3)
+	})
+	addCorner(hueCursor, 999)
+
+	local bottomRow = create("Frame", {
+		Parent = shell,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 28)
+	})
+
+	local hexBox = makeInputBox(bottomRow, {
+		BackgroundColor3 = Theme.Input,
+		Size = UDim2.new(1, -76, 0, 28),
+		Text = colorToHex(item.Value),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		TextYAlignment = Enum.TextYAlignment.Center
+	})
+
+	local applyHexButton = create("TextButton", {
+		Parent = bottomRow,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		BackgroundColor3 = Theme.Input,
+		BorderSizePixel = 0,
+		AutoButtonColor = false,
+		Size = UDim2.fromOffset(68, 28),
+		Text = "Apply",
+		TextColor3 = Theme.Text,
+		TextSize = 12,
+		FontFace = Font.fromEnum(Enum.Font.GothamMedium)
+	})
+	addCorner(applyHexButton, 10)
+	addStroke(applyHexButton, Theme.Stroke, 1, 0.18)
+
+	local function updateVisuals(skipCallback)
+		local color = Color3.fromHSV(hue, saturation, value)
+		item.Value = color
+		preview.BackgroundColor3 = color
+		colorArea.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+		areaCursor.Position = UDim2.new(saturation, 0, 1 - value, 0)
+		hueCursor.Position = UDim2.new(0.5, 0, hue, 0)
+		hexBox.Text = colorToHex(color)
+		if not skipCallback then
+			safeCallback(callback, color)
+		end
+	end
+
+	local function setFromArea(position)
+		saturation = math.clamp((position.X - colorArea.AbsolutePosition.X) / colorArea.AbsoluteSize.X, 0, 1)
+		value = 1 - math.clamp((position.Y - colorArea.AbsolutePosition.Y) / colorArea.AbsoluteSize.Y, 0, 1)
+		updateVisuals()
+	end
+
+	local function setFromHue(position)
+		hue = math.clamp((position.Y - hueBar.AbsolutePosition.Y) / hueBar.AbsoluteSize.Y, 0, 1)
+		updateVisuals()
+	end
+
+	colorArea.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			draggingMode = "Area"
+			setFromArea(input.Position)
+		end
+	end)
+
+	hueBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			draggingMode = "Hue"
+			setFromHue(input.Position)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if not draggingMode then
+			return
+		end
+
+		if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
+			return
+		end
+
+		if draggingMode == "Area" then
+			setFromArea(input.Position)
+		else
+			setFromHue(input.Position)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			draggingMode = nil
+		end
+	end)
+
+	local function applyHex()
+		local color = hexToColor(hexBox.Text)
+		if not color then
+			hexBox.Text = colorToHex(item.Value)
+			return
+		end
+		hue, saturation, value = Color3.toHSV(color)
+		updateVisuals()
+	end
+
+	hexBox.FocusLost:Connect(applyHex)
+	applyHexButton.MouseButton1Click:Connect(applyHex)
+
+	function item:Set(color)
+		if typeof(color) ~= "Color3" then
+			return self.Value
+		end
+		hue, saturation, value = Color3.toHSV(color)
+		updateVisuals()
+		return self.Value
+	end
+
+	function item:SetVisible(state)
+		shell.Visible = state == true
+		return shell.Visible
+	end
+
+	function item:ToggleVisible()
+		shell.Visible = not shell.Visible
+		return shell.Visible
+	end
+
+	item.Frame = shell
+	updateVisuals(true)
+	return item
+end
+
 function Section:AddLabel(text)
 	local row = createRow(self, 0)
 	makeTextLabel(row, {
@@ -445,15 +736,12 @@ function Section:AddParagraph(title, text)
 	local row = createRow(self, 0)
 	local wrap = create("Frame", {
 		Parent = row,
-		BackgroundColor3 = Theme.Input,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0)
 	})
-	addCorner(wrap, 12)
-	addStroke(wrap, Theme.Stroke, 1, 0.15)
-	addPadding(wrap, 12, 12, 12, 12)
-	addList(wrap, 6, false)
+	addList(wrap, 4, false)
 
 	makeTextLabel(wrap, {
 		Text = title or "Paragraph",
@@ -518,7 +806,7 @@ function Section:AddButton(options)
 		Text = ""
 	})
 	addCorner(button, 12)
-	addStroke(button, Theme.Stroke, 1, 0.12)
+	addStroke(button, Theme.Stroke, 1, 0.16)
 	addPadding(button, 12, 12, 12, 12)
 	addList(button, 4, false)
 
@@ -536,7 +824,12 @@ function Section:AddButton(options)
 		})
 	end
 
-	bindHover(button, button, Theme.InputSoft)
+	button.MouseEnter:Connect(function()
+		tween(button, {BackgroundTransparency = 0.02}, 0.14)
+	end)
+	button.MouseLeave:Connect(function()
+		tween(button, {BackgroundTransparency = 0}, 0.14)
+	end)
 	button.MouseButton1Click:Connect(function()
 		safeCallback(options.Callback)
 	end)
@@ -553,36 +846,34 @@ function Section:AddToggle(options)
 	local row = createRow(self, 0)
 	local shell = create("Frame", {
 		Parent = row,
-		BackgroundColor3 = Theme.Input,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, 0, 0, 48)
+		Size = UDim2.new(1, 0, 0, 42)
 	})
-	addCorner(shell, 12)
-	addStroke(shell, Theme.Stroke, 1, 0.12)
 
 	local header = create("TextButton", {
 		Parent = shell,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
-		Size = UDim2.new(1, 0, 0, 48),
+		Size = UDim2.new(1, 0, 0, options.Description and options.Description ~= "" and 42 or 22),
 		Text = ""
 	})
 
 	local title = makeTextLabel(header, {
-		Position = UDim2.new(0, 12, 0, 9),
+		Position = UDim2.new(0, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -80, 0, 16),
+		Size = UDim2.new(1, -82, 0, 16),
 		Text = options.Title or "Toggle",
 		FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
 		TextSize = 14
 	})
 
 	local description = makeTextLabel(header, {
-		Position = UDim2.new(0, 12, 0, 25),
+		Position = UDim2.new(0, 0, 0, 18),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -80, 0, 14),
+		Size = UDim2.new(1, -82, 0, 14),
 		Text = options.Description or "Enable or disable this option.",
 		TextColor3 = Theme.MutedText,
 		TextSize = 12
@@ -595,29 +886,29 @@ function Section:AddToggle(options)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.new(0, 0, 0, 24)
+		Size = UDim2.new(0, 0, 0, 20)
 	})
 	local accessoryLayout = addList(accessoryWrap, 8, true)
 	accessoryLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 	accessoryLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	local track = create("Frame", {
+	local box = create("Frame", {
 		Parent = accessoryWrap,
-		Size = UDim2.new(0, 44, 0, 24),
-		BackgroundColor3 = Theme.AccentSoft,
+		Size = UDim2.new(0, 20, 0, 20),
+		BackgroundColor3 = Theme.SectionSoft,
 		BorderSizePixel = 0
 	})
-	addCorner(track, 999)
+	addCorner(box, 6)
 
-	local thumb = create("Frame", {
-		Parent = track,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 3, 0.5, 0),
-		Size = UDim2.new(0, 18, 0, 18),
-		BackgroundColor3 = Theme.Text,
+	local fill = create("Frame", {
+		Parent = box,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.fromOffset(0, 0),
+		BackgroundColor3 = item.Color or self.Window.AccentColor,
 		BorderSizePixel = 0
 	})
-	addCorner(thumb, 999)
+	addCorner(fill, 4)
 
 	local panel = create("Frame", {
 		Parent = shell,
@@ -648,11 +939,12 @@ function Section:AddToggle(options)
 	local function apply(value)
 		item.Value = value
 		if value then
-			track.BackgroundColor3 = getActiveColor()
-			tween(thumb, {Position = UDim2.new(1, -21, 0.5, 0)}, 0.16)
+			box.BackgroundColor3 = Theme.Input
+			fill.BackgroundColor3 = getActiveColor()
+			tween(fill, {Size = UDim2.fromOffset(12, 12)}, 0.16)
 		else
-			track.BackgroundColor3 = Theme.AccentSoft
-			tween(thumb, {Position = UDim2.new(0, 3, 0.5, 0)}, 0.16)
+			box.BackgroundColor3 = Theme.SectionSoft
+			tween(fill, {Size = UDim2.fromOffset(0, 0)}, 0.16)
 		end
 		safeCallback(options.Callback, value)
 	end
@@ -668,7 +960,7 @@ function Section:AddToggle(options)
 			colorButton.BackgroundColor3 = color
 		end
 		if self.Value then
-			track.BackgroundColor3 = color
+			fill.BackgroundColor3 = color
 		end
 		return self.Color
 	end
@@ -688,153 +980,34 @@ function Section:AddToggle(options)
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
 			LayoutOrder = -1,
-			Size = UDim2.new(0, 24, 0, 24),
+			Size = UDim2.new(0, 18, 0, 18),
 			Text = ""
 		})
-		addCorner(colorButton, 999)
-		addStroke(colorButton, Theme.Stroke, 1, 0.12)
+		addCorner(colorButton, 6)
 
-		local pickerShell = create("Frame", {
-			Parent = panel,
-			BackgroundColor3 = Theme.InputSoft,
-			BorderSizePixel = 0,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.new(1, 0, 0, 0),
-			Visible = false
-		})
-		addCorner(pickerShell, 10)
-		addStroke(pickerShell, Theme.Stroke, 1, 0.12)
-		addPadding(pickerShell, 10, 10, 10, 10)
-		addList(pickerShell, 6, false)
-
-		makeTextLabel(pickerShell, {
-			Text = pickerOptions.Title or "Toggle Color",
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-
-		local function buildChannel(name, value)
-			local line = create("Frame", {
-				Parent = pickerShell,
-				BackgroundTransparency = 1,
-				BorderSizePixel = 0,
-				Size = UDim2.new(1, 0, 0, 30)
-			})
-
-			makeTextLabel(line, {
-				Position = UDim2.new(0, 0, 0.5, 0),
-				AnchorPoint = Vector2.new(0, 0.5),
-				AutomaticSize = Enum.AutomaticSize.None,
-				Size = UDim2.new(0, 16, 0, 14),
-				Text = name,
-				TextColor3 = Theme.MutedText,
-				TextSize = 11
-			})
-
-			local bar = create("Frame", {
-				Parent = line,
-				Position = UDim2.new(0, 24, 0.5, -4),
-				Size = UDim2.new(1, -74, 0, 8),
-				BackgroundColor3 = Theme.Input,
-				BorderSizePixel = 0
-			})
-			addCorner(bar, 999)
-
-			local fill = create("Frame", {
-				Parent = bar,
-				Size = UDim2.new(value / 255, 0, 1, 0),
-				BackgroundColor3 = name == "R" and Color3.fromRGB(255, 96, 96) or (name == "G" and Color3.fromRGB(106, 214, 140) or Color3.fromRGB(116, 159, 255)),
-				BorderSizePixel = 0
-			})
-			addCorner(fill, 999)
-
-			local box = makeInputBox(line, {
-				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.new(1, 0, 0.5, 0),
-				Size = UDim2.new(0, 40, 0, 24),
-				TextXAlignment = Enum.TextXAlignment.Center,
-				TextYAlignment = Enum.TextYAlignment.Center,
-				Text = tostring(value)
-			})
-
-			return bar, fill, box
-		end
-
-		local redBar, redFill, redBox = buildChannel("R", math.floor(defaultColor.R * 255 + 0.5))
-		local greenBar, greenFill, greenBox = buildChannel("G", math.floor(defaultColor.G * 255 + 0.5))
-		local blueBar, blueFill, blueBox = buildChannel("B", math.floor(defaultColor.B * 255 + 0.5))
-
-		local function refreshColor()
-			local color = Color3.fromRGB(
-				math.clamp(tonumber(redBox.Text) or 0, 0, 255),
-				math.clamp(tonumber(greenBox.Text) or 0, 0, 255),
-				math.clamp(tonumber(blueBox.Text) or 0, 0, 255)
-			)
+		local pickerObject = createColorPickerWidget(panel, defaultColor, function(color)
 			item:SetColor(color)
-			redFill.Size = UDim2.new(color.R, 0, 1, 0)
-			greenFill.Size = UDim2.new(color.G, 0, 1, 0)
-			blueFill.Size = UDim2.new(color.B, 0, 1, 0)
-			redBox.Text = tostring(math.floor(color.R * 255 + 0.5))
-			greenBox.Text = tostring(math.floor(color.G * 255 + 0.5))
-			blueBox.Text = tostring(math.floor(color.B * 255 + 0.5))
 			safeCallback(pickerOptions.Callback, color, item.Value)
-		end
-
-		local function attachChannel(bar, box, fill)
-			bar.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					draggingBar = {Bar = bar, Box = box, Fill = fill}
-				end
-			end)
-
-			bar.InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					draggingBar = nil
-				end
-			end)
-
-			box.FocusLost:Connect(refreshColor)
-		end
-
-		attachChannel(redBar, redBox, redFill)
-		attachChannel(greenBar, greenBox, greenFill)
-		attachChannel(blueBar, blueBox, blueFill)
-
-		UserInputService.InputChanged:Connect(function(input)
-			if not draggingBar then
-				return
-			end
-
-			if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
-				return
-			end
-
-			local alpha = math.clamp((input.Position.X - draggingBar.Bar.AbsolutePosition.X) / draggingBar.Bar.AbsoluteSize.X, 0, 1)
-			draggingBar.Box.Text = tostring(math.floor(alpha * 255 + 0.5))
-			draggingBar.Fill.Size = UDim2.new(alpha, 0, 1, 0)
-			refreshColor()
 		end)
+		pickerObject.Frame.Parent = panel
 
 		colorButton.MouseButton1Click:Connect(function()
-			pickerShell.Visible = not pickerShell.Visible
-			panel.Visible = pickerShell.Visible
+			local visible = pickerObject:ToggleVisible()
+			panel.Visible = visible
 		end)
 
 		colorPickerObject = {
-			Frame = pickerShell,
+			Frame = pickerObject.Frame,
 			Set = function(_, color)
+				pickerObject:Set(color)
 				item:SetColor(color)
-				redBox.Text = tostring(math.floor(color.R * 255 + 0.5))
-				greenBox.Text = tostring(math.floor(color.G * 255 + 0.5))
-				blueBox.Text = tostring(math.floor(color.B * 255 + 0.5))
-				refreshColor()
 			end,
 			Get = function()
 				return item.Color
 			end
 		}
 
-		item:SetColor(defaultColor)
+		pickerObject:Set(defaultColor)
 		updateLabelWidths()
 		return colorPickerObject
 	end
@@ -845,7 +1018,7 @@ function Section:AddToggle(options)
 
 	self.Window:OnAccentChanged(function(color)
 		if item.Value and not item.Color then
-			track.BackgroundColor3 = color
+			fill.BackgroundColor3 = color
 		end
 	end)
 
@@ -871,12 +1044,10 @@ function Section:AddSlider(options)
 	local row = createRow(self, 0)
 	local shell = create("Frame", {
 		Parent = row,
-		BackgroundColor3 = Theme.Input,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Size = UDim2.new(1, 0, 0, 62)
 	})
-	addCorner(shell, 12)
-	addStroke(shell, Theme.Stroke, 1, 0.12)
 
 	makeTextLabel(shell, {
 		Position = UDim2.new(0, 12, 0, 10),
@@ -891,6 +1062,7 @@ function Section:AddSlider(options)
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -12, 0, 8),
 		Size = UDim2.new(0, 76, 0, 26),
+		BackgroundColor3 = Theme.Input,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
 		Text = ""
@@ -988,14 +1160,12 @@ function Section:AddTextbox(options)
 	local row = createRow(self, 0)
 	local shell = create("Frame", {
 		Parent = row,
-		BackgroundColor3 = Theme.Input,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0)
 	})
-	addCorner(shell, 12)
-	addStroke(shell, Theme.Stroke, 1, 0.12)
-	addPadding(shell, 12, 12, 12, 12)
+	addPadding(shell, 0, 0, 0, 0)
 	addList(shell, 8, false)
 
 	makeTextLabel(shell, {
@@ -1007,6 +1177,7 @@ function Section:AddTextbox(options)
 	local input = makeInputBox(shell, {
 		PlaceholderText = options.Placeholder or "Type here...",
 		MultiLine = lines > 1,
+		BackgroundColor3 = Theme.Input,
 		Text = item.Value,
 		Size = UDim2.new(1, 0, 0, height),
 		TextYAlignment = lines > 1 and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
@@ -1037,14 +1208,12 @@ function Section:AddDropdown(options)
 	local row = createRow(self, 0)
 	local shell = create("Frame", {
 		Parent = row,
-		BackgroundColor3 = Theme.Input,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0)
 	})
-	addCorner(shell, 12)
-	addStroke(shell, Theme.Stroke, 1, 0.12)
-	addPadding(shell, 12, 12, 12, 12)
+	addPadding(shell, 0, 0, 0, 0)
 	addList(shell, 8, false)
 
 	makeTextLabel(shell, {
@@ -1055,13 +1224,14 @@ function Section:AddDropdown(options)
 
 	local current = create("TextButton", {
 		Parent = shell,
-		BackgroundColor3 = Theme.InputSoft,
+		BackgroundColor3 = Theme.Input,
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
 		Size = UDim2.new(1, 0, 0, 36),
 		Text = ""
 	})
 	addCorner(current, 10)
+	addStroke(current, Theme.Stroke, 1, 0.16)
 
 	local valueLabel = makeTextLabel(current, {
 		Position = UDim2.new(0, 12, 0.5, 0),
@@ -1085,13 +1255,14 @@ function Section:AddDropdown(options)
 
 	local optionsFrame = create("Frame", {
 		Parent = shell,
-		BackgroundColor3 = Theme.InputSoft,
+		BackgroundColor3 = Theme.Input,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0),
 		Visible = false
 	})
 	addCorner(optionsFrame, 10)
+	addStroke(optionsFrame, Theme.Stroke, 1, 0.16)
 	addPadding(optionsFrame, 6, 6, 6, 6)
 	addList(optionsFrame, 4, false)
 
@@ -1104,7 +1275,7 @@ function Section:AddDropdown(options)
 	for _, value in ipairs(values) do
 		local optionButton = create("TextButton", {
 			Parent = optionsFrame,
-			BackgroundColor3 = Theme.Input,
+			BackgroundColor3 = Theme.InputSoft,
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
 			Size = UDim2.new(1, 0, 0, 30),
@@ -1122,7 +1293,6 @@ function Section:AddDropdown(options)
 			TextSize = 13
 		})
 
-		bindHover(optionButton, optionButton, Theme.SectionSoft)
 		optionButton.MouseButton1Click:Connect(function()
 			apply(value)
 			opened = false
@@ -1155,12 +1325,10 @@ function Section:AddKeybind(options)
 	local row = createRow(self, 0)
 	local shell = create("Frame", {
 		Parent = row,
-		BackgroundColor3 = Theme.Input,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Size = UDim2.new(1, 0, 0, 48)
 	})
-	addCorner(shell, 12)
-	addStroke(shell, Theme.Stroke, 1, 0.12)
 
 	makeTextLabel(shell, {
 		Position = UDim2.new(0, 12, 0, 9),
@@ -1184,13 +1352,14 @@ function Section:AddKeybind(options)
 		Parent = shell,
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -12, 0.5, 0),
-		BackgroundColor3 = Theme.InputSoft,
+		BackgroundColor3 = Theme.Input,
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
 		Size = UDim2.new(0, 92, 0, 28),
 		Text = ""
 	})
 	addCorner(bindButton, 10)
+	addStroke(bindButton, Theme.Stroke, 1, 0.16)
 
 	local bindText = makeTextLabel(bindButton, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -1258,19 +1427,16 @@ function Section:AddColorPicker(options)
 	options = options or {}
 	local default = options.Default or Theme.Accent
 	local item = controlObject(default)
-	local open = false
 
 	local row = createRow(self, 0)
 	local shell = create("Frame", {
 		Parent = row,
-		BackgroundColor3 = Theme.Input,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0)
 	})
-	addCorner(shell, 12)
-	addStroke(shell, Theme.Stroke, 1, 0.12)
-	addPadding(shell, 12, 12, 12, 12)
+	addPadding(shell, 0, 0, 0, 0)
 	addList(shell, 8, false)
 
 	local header = create("TextButton", {
@@ -1295,156 +1461,28 @@ function Section:AddColorPicker(options)
 	local preview = create("Frame", {
 		Parent = header,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -22, 0.5, 0),
-		Size = UDim2.new(0, 34, 0, 18),
+		Position = UDim2.new(1, -20, 0.5, 0),
+		Size = UDim2.new(0, 28, 0, 16),
 		BackgroundColor3 = default,
 		BorderSizePixel = 0
 	})
-	addCorner(preview, 9)
+	addCorner(preview, 6)
 
-	local toggleText = makeTextLabel(header, {
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, 0, 0.5, 0),
-		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(0, 16, 0, 16),
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Text = "v",
-		TextColor3 = Theme.MutedText,
-		TextSize = 13
-	})
-
-	local sliders = create("Frame", {
-		Parent = shell,
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, 0, 0, 0),
-		Visible = false
-	})
-	addList(sliders, 6, false)
-
-	local function buildChannel(name, value)
-		local line = create("Frame", {
-			Parent = sliders,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Size = UDim2.new(1, 0, 0, 32)
-		})
-
-		makeTextLabel(line, {
-			Position = UDim2.new(0, 0, 0.5, 0),
-			AnchorPoint = Vector2.new(0, 0.5),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(0, 18, 0, 16),
-			Text = name,
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-
-		local bar = create("Frame", {
-			Parent = line,
-			Position = UDim2.new(0, 28, 0.5, -4),
-			Size = UDim2.new(1, -80, 0, 8),
-			BackgroundColor3 = Theme.InputSoft,
-			BorderSizePixel = 0
-		})
-		addCorner(bar, 999)
-
-		local fill = create("Frame", {
-			Parent = bar,
-			Size = UDim2.new(value / 255, 0, 1, 0),
-			BackgroundColor3 = name == "R" and Color3.fromRGB(255, 96, 96) or (name == "G" and Color3.fromRGB(106, 214, 140) or Color3.fromRGB(116, 159, 255)),
-			BorderSizePixel = 0
-		})
-		addCorner(fill, 999)
-
-		local box = makeInputBox(line, {
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, 0, 0.5, 0),
-			Size = UDim2.new(0, 44, 0, 26),
-			TextXAlignment = Enum.TextXAlignment.Center,
-			TextYAlignment = Enum.TextYAlignment.Center,
-			Text = tostring(value)
-		})
-
-		return bar, fill, box
-	end
-
-	local redBar, redFill, redBox = buildChannel("R", math.floor(default.R * 255))
-	local greenBar, greenFill, greenBox = buildChannel("G", math.floor(default.G * 255))
-	local blueBar, blueFill, blueBox = buildChannel("B", math.floor(default.B * 255))
-
-	local draggingBar
-
-	local function readColor()
-		return Color3.fromRGB(tonumber(redBox.Text) or 0, tonumber(greenBox.Text) or 0, tonumber(blueBox.Text) or 0)
-	end
-
-	local function refreshFromBoxes()
-		local color = Color3.fromRGB(
-			math.clamp(tonumber(redBox.Text) or 0, 0, 255),
-			math.clamp(tonumber(greenBox.Text) or 0, 0, 255),
-			math.clamp(tonumber(blueBox.Text) or 0, 0, 255)
-		)
+	local picker = createColorPickerWidget(shell, default, function(color)
 		item.Value = color
 		preview.BackgroundColor3 = color
-		redFill.Size = UDim2.new(color.R, 0, 1, 0)
-		greenFill.Size = UDim2.new(color.G, 0, 1, 0)
-		blueFill.Size = UDim2.new(color.B, 0, 1, 0)
-		redBox.Text = tostring(math.floor(color.R * 255 + 0.5))
-		greenBox.Text = tostring(math.floor(color.G * 255 + 0.5))
-		blueBox.Text = tostring(math.floor(color.B * 255 + 0.5))
 		safeCallback(options.Callback, color)
-	end
-
-	local function attachChannel(bar, box, fill)
-		bar.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				draggingBar = {Bar = bar, Box = box, Fill = fill}
-			end
-		end)
-
-		bar.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				draggingBar = nil
-			end
-		end)
-
-		box.FocusLost:Connect(refreshFromBoxes)
-	end
-
-	attachChannel(redBar, redBox, redFill)
-	attachChannel(greenBar, greenBox, greenFill)
-	attachChannel(blueBar, blueBox, blueFill)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if not draggingBar then
-			return
-		end
-
-		if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
-			return
-		end
-
-		local alpha = math.clamp((input.Position.X - draggingBar.Bar.AbsolutePosition.X) / draggingBar.Bar.AbsoluteSize.X, 0, 1)
-		draggingBar.Box.Text = tostring(math.floor(alpha * 255 + 0.5))
-		draggingBar.Fill.Size = UDim2.new(alpha, 0, 1, 0)
-		refreshFromBoxes()
 	end)
+	picker.Frame.Parent = shell
 
 	function item:Set(value)
-		self.Value = value
-		redBox.Text = tostring(math.floor(value.R * 255 + 0.5))
-		greenBox.Text = tostring(math.floor(value.G * 255 + 0.5))
-		blueBox.Text = tostring(math.floor(value.B * 255 + 0.5))
-		refreshFromBoxes()
+		self.Value = picker:Set(value)
+		preview.BackgroundColor3 = self.Value
 		return self.Value
 	end
 
 	header.MouseButton1Click:Connect(function()
-		open = not open
-		sliders.Visible = open
-		toggleText.Text = open and "^" or "v"
+		picker:ToggleVisible()
 	end)
 
 	item:Set(default)
@@ -1465,9 +1503,31 @@ Section.Colorpicker = Section.AddColorPicker
 local Tab = {}
 Tab.__index = Tab
 
-function Tab:AddSection(title, description)
-	local card = makeCard(self.Page, 16)
-	card.BackgroundTransparency = 0.14
+local function resolveTabColumn(tab, options)
+	options = options or {}
+	if options.FullWidth or tab.Window.Profile.IsPhone then
+		return tab.LeftColumn
+	end
+
+	if options.Column == "right" then
+		return tab.RightColumn
+	end
+
+	if options.Column == "left" then
+		return tab.LeftColumn
+	end
+
+	tab.SectionCount = (tab.SectionCount or 0) + 1
+	if tab.SectionCount % 2 == 0 then
+		return tab.RightColumn
+	end
+	return tab.LeftColumn
+end
+
+function Tab:AddSection(title, description, options)
+	local parentColumn = resolveTabColumn(self, options)
+	local card = makeCard(parentColumn, 18)
+	card.BackgroundTransparency = 0.08
 	addPadding(card, 16, 16, 16, 16)
 	local container = create("Frame", {
 		Parent = card,
@@ -1502,8 +1562,9 @@ function Tab:AddSection(title, description)
 	return section
 end
 
-function Tab:AddCustomCard(builder)
-	local card = makeCard(self.Page, 18)
+function Tab:AddCustomCard(builder, options)
+	local parentColumn = resolveTabColumn(self, options)
+	local card = makeCard(parentColumn, 18)
 	card.BackgroundTransparency = 0.08
 	addPadding(card, 16, 16, 16, 16)
 	local container = create("Frame", {
@@ -1543,11 +1604,7 @@ function CloudyUI:RefreshTabVisuals()
 	for _, tab in pairs(self.Tabs) do
 		local selected = self.CurrentTab == tab
 		if tab.NavButton then
-			tween(tab.NavButton, {
-				BackgroundColor3 = selected and Theme.SectionSoft or Theme.Input,
-				BackgroundTransparency = selected and 0 or 0.3
-			}, 0.16)
-			tab.NavDot.BackgroundColor3 = selected and self.AccentColor or Color3.fromRGB(50, 50, 54)
+			tab.NavDot.BackgroundTransparency = selected and 0 or 0.82
 			tab.NavTitle.TextColor3 = selected and Theme.Text or Theme.MutedText
 		end
 
@@ -1578,7 +1635,13 @@ function CloudyUI:SelectTab(name)
 
 	self.CurrentTab = tab
 	for _, otherTab in pairs(self.Tabs) do
-		otherTab.Page.Visible = otherTab == tab
+		if otherTab == tab then
+			otherTab.Page.Visible = true
+			otherTab.Page.Position = UDim2.new(0, 10, 0, 0)
+			tween(otherTab.Page, {Position = UDim2.new(0, 0, 0, 0)}, 0.18)
+		else
+			otherTab.Page.Visible = false
+		end
 	end
 	self:RefreshTabVisuals()
 end
@@ -1627,39 +1690,69 @@ function CloudyUI:CreateTab(name, options)
 		ScrollBarThickness = 0,
 		Visible = false
 	})
-	addList(page, 12, false)
 	addPadding(page, 0, 4, 6, 0)
 
+	local columns = create("Frame", {
+		Parent = page,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(1, 0, 0, 0)
+	})
+	local columnsLayout = addList(columns, 12, true)
+	columnsLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+	local leftColumn = create("Frame", {
+		Parent = columns,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(0.5, -6, 0, 0)
+	})
+	addList(leftColumn, 12, false)
+
+	local rightColumn = create("Frame", {
+		Parent = columns,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(0.5, -6, 0, 0)
+	})
+	addList(rightColumn, 12, false)
+
 	tab.Page = page
+	tab.Columns = columns
+	tab.LeftColumn = leftColumn
+	tab.RightColumn = rightColumn
+	tab.SectionCount = 0
 	self.Tabs[name] = tab
 
 	if not options.HideSidebarButton then
 		local nav = create("TextButton", {
 			Parent = self.NavList,
-			BackgroundColor3 = Theme.Input,
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
 			Size = UDim2.new(1, 0, 0, 38),
 			Text = ""
 		})
-		addCorner(nav, 8)
 
 		local dot = create("Frame", {
 			Parent = nav,
 			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 12, 0.5, 0),
-			Size = UDim2.new(0, 8, 0, 8),
-			BackgroundColor3 = Theme.Stroke,
+			Position = UDim2.new(0, 0, 0.5, 0),
+			Size = UDim2.new(0, 4, 0, 18),
+			BackgroundColor3 = Theme.Text,
+			BackgroundTransparency = 0.82,
 			BorderSizePixel = 0
 		})
 		addCorner(dot, 999)
 
 		local title = makeTextLabel(nav, {
-			Position = UDim2.new(0, 28, 0.5, 0),
+			Position = UDim2.new(0, 14, 0.5, 0),
 			AnchorPoint = Vector2.new(0, 0.5),
 			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -36, 0, 16),
+			Size = UDim2.new(1, -18, 0, 16),
 			Text = name,
 			TextColor3 = Theme.MutedText,
 			TextSize = 14,
@@ -1668,10 +1761,6 @@ function CloudyUI:CreateTab(name, options)
 
 		nav.MouseButton1Click:Connect(function()
 			self:SelectTab(name)
-		end)
-
-		bindHover(nav, nav, Theme.SectionSoft, function()
-			return self.CurrentTab == tab and Theme.AccentSoft or Theme.Input
 		end)
 		tab.NavButton = nav
 		tab.NavDot = dot
@@ -1783,10 +1872,22 @@ function CloudyUI:ApplyResponsiveLayout(forceCenter)
 	self.Sidebar.Size = UDim2.new(0, profile.SidebarWidth, 1, 0)
 	self.ContentShell.Size = UDim2.new(1, -(profile.SidebarWidth + 16), 1, 0)
 	self.ContentShell.Position = UDim2.new(0, profile.SidebarWidth + 16, 0, 0)
-	self.BrandCard.Size = UDim2.new(1, 0, 0, profile.IsPhone and 116 or 128)
+	self.BrandCard.Size = UDim2.new(1, 0, 0, profile.IsPhone and 110 or 122)
 	self.ToggleButton.Size = profile.IsPhone and UDim2.fromOffset(48, 48) or UDim2.fromOffset(52, 52)
 	self.QuickTabs.Size = UDim2.new(0, math.min(self.ContentShell.AbsoluteSize.X, profile.IsPhone and 320 or 420), 0, 32)
 	self.ResizeHandle.Visible = not profile.IsPhone
+	for _, tab in pairs(self.Tabs) do
+		if tab.LeftColumn and tab.RightColumn then
+			if profile.IsPhone then
+				tab.LeftColumn.Size = UDim2.new(1, 0, 0, 0)
+				tab.RightColumn.Visible = false
+			else
+				tab.LeftColumn.Size = UDim2.new(0.5, -6, 0, 0)
+				tab.RightColumn.Size = UDim2.new(0.5, -6, 0, 0)
+				tab.RightColumn.Visible = true
+			end
+		end
+	end
 	self.Main.Position = clampPosition(self.Main.Position, self.Main.Size)
 end
 
@@ -1850,10 +1951,13 @@ function CloudyUI:CreateDefaultWindow(config)
 		end
 	end
 
+	local profile = getProfile()
+
 	local selfObject = setmetatable({
 		AccentColor = config.AccentColor or Theme.Accent,
 		AccentListeners = {},
 		Tabs = {},
+		Profile = profile,
 		Enabled = true,
 		AutoSize = config.AutoSize ~= false,
 		ManualSize = false,
@@ -1869,8 +1973,6 @@ function CloudyUI:CreateDefaultWindow(config)
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = getGuiParent()
 	})
-
-	local profile = getProfile()
 	local main = create("Frame", {
 		Parent = screen,
 		BackgroundColor3 = Theme.Background,
@@ -1908,44 +2010,34 @@ function CloudyUI:CreateDefaultWindow(config)
 		Parent = main,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, -28, 0, 44),
+		Size = UDim2.new(1, -28, 0, 36),
 		Position = UDim2.new(0, 14, 0, 10)
-	})
-
-	makeTextLabel(topbar, {
-		Text = "|||",
-		FontFace = Font.fromEnum(Enum.Font.GothamBold),
-		TextSize = 14,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(0, 20, 0, 20),
-		Position = UDim2.new(0, 0, 0, 6),
-		TextColor3 = Theme.MutedText
 	})
 
 	makeTextLabel(topbar, {
 		Text = config.Title or "Cloudy Developer",
 		FontFace = Font.fromEnum(Enum.Font.GothamBold),
-		TextSize = 16,
+		TextSize = 15,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -120, 0, 18),
-		Position = UDim2.new(0, 26, 0, 5)
+		Size = UDim2.new(1, 0, 0, 18),
+		Position = UDim2.new(0, 0, 0, 1)
 	})
 
 	makeTextLabel(topbar, {
 		Text = config.Subtitle or "Clean panel with responsive layout, working controls, and live feedback support.",
 		TextColor3 = Theme.MutedText,
-		TextSize = 11,
+		TextSize = 10,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -120, 0, 12),
-		Position = UDim2.new(0, 26, 0, 24)
+		Size = UDim2.new(1, 0, 0, 12),
+		Position = UDim2.new(0, 0, 0, 19)
 	})
 
 	local body = create("Frame", {
 		Parent = main,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, -28, 1, -66),
-		Position = UDim2.new(0, 14, 0, 52)
+		Size = UDim2.new(1, -28, 1, -58),
+		Position = UDim2.new(0, 14, 0, 44)
 	})
 
 	local sidebar = create("Frame", {
@@ -1955,7 +2047,6 @@ function CloudyUI:CreateDefaultWindow(config)
 		Size = UDim2.new(0, profile.SidebarWidth, 1, 0)
 	})
 	addCorner(sidebar, 0)
-	addStroke(sidebar, Theme.Stroke, 1, 1)
 
 	local sidebarAccent = create("Frame", {
 		Parent = sidebar,
@@ -1980,50 +2071,56 @@ function CloudyUI:CreateDefaultWindow(config)
 		BackgroundColor3 = Color3.fromRGB(9, 9, 11),
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
-		Size = UDim2.new(1, 0, 0, profile.IsPhone and 116 or 128),
+		Size = UDim2.new(1, 0, 0, profile.IsPhone and 110 or 122),
 		Text = ""
 	})
 	addCorner(brandCard, 10)
-	addStroke(brandCard, Theme.Stroke, 1, 1)
 
 	local brandAvatar = create("ImageLabel", {
 		Parent = brandCard,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 14, 0, 14),
-		Size = profile.IsPhone and UDim2.fromOffset(48, 48) or UDim2.fromOffset(56, 56),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 12),
+		Size = profile.IsPhone and UDim2.fromOffset(40, 40) or UDim2.fromOffset(46, 46),
 		Image = getAvatarUrl(LocalPlayer.UserId)
 	})
 	addCorner(brandAvatar, 999)
 
 	local brandName = makeTextLabel(brandCard, {
-		Position = UDim2.new(0, profile.IsPhone and 72 or 82, 0, 16),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, profile.IsPhone and 58 or 62),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -88, 0, 18),
+		Size = UDim2.new(1, -20, 0, 16),
 		Text = LocalPlayer.DisplayName,
 		FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
-		TextSize = 12,
+		TextSize = 11,
 		TextScaled = true,
-		TextWrapped = false
+		TextWrapped = false,
+		TextXAlignment = Enum.TextXAlignment.Center
 	})
-	addTextConstraint(brandName, 9, 12)
+	addTextConstraint(brandName, 8, 11)
 
 	makeTextLabel(brandCard, {
-		Position = UDim2.new(0, profile.IsPhone and 72 or 82, 0, 36),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, profile.IsPhone and 76 or 80),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -92, 0, 14),
+		Size = UDim2.new(1, -20, 0, 14),
 		Text = "Guest",
 		TextColor3 = Theme.MutedText,
-		TextSize = 11
+		TextSize = 10,
+		TextXAlignment = Enum.TextXAlignment.Center
 	})
 
 	makeTextLabel(brandCard, {
-		Position = UDim2.new(0, 14, 0, profile.IsPhone and 74 or 82),
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -10),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -28, 0, 28),
+		Size = UDim2.new(1, -20, 0, 16),
 		Text = "Open Home",
 		TextColor3 = Theme.MutedText,
-		TextSize = 12
+		TextSize = 10,
+		TextXAlignment = Enum.TextXAlignment.Center
 	})
 
 	local navLabel = makeTextLabel(sidebarContent, {
@@ -2125,40 +2222,82 @@ function CloudyUI:CreateDefaultWindow(config)
 
 	selfObject:BuildHome(homeTab)
 
-	local updates = updatesTab:AddSection("Latest Changes", "This tab is the right-side view for updates. Replace the text whenever you ship a new build.")
-	updates:AddParagraph("Panel Update", "Rebuilt the old admin style into a cleaner Cloudy layout with a left navigation rail, a real home screen, drag support, resize support, and responsive phone or PC sizing.")
-	updates:AddParagraph("UI Controls", "Buttons, toggles, sliders, textboxes, dropdowns, keybinds, dividers, labels, and a color picker are all wired so the callbacks actually run.")
-	updates:AddParagraph("Feedback", "A FastAPI backend file is included separately so your users can send live feedback entries with avatar, username, display name, and message content.")
+	updatesTab:AddCustomCard(function(card, container)
+		container.AutomaticSize = Enum.AutomaticSize.None
+		container.Size = UDim2.new(1, 0, 0, 174)
 
-	local scripts = scriptsTab:AddSection("Control Showcase", "This tab proves the library functions are active and ready for your own script actions.")
-	scripts:AddLabel("Use this section as your script control area.")
-	scripts:AddDivider("Actions")
-	scripts:AddButton({
+		local first = create("Frame", {
+			Parent = container,
+			BackgroundColor3 = Theme.Input,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0, 0, 0, 0),
+			Size = UDim2.new(1, 0, 0, 74)
+		})
+		addCorner(first, 12)
+		addPadding(first, 12, 12, 12, 12)
+		addList(first, 4, false)
+		makeTextLabel(first, {
+			Text = "Latest Changes",
+			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+			TextSize = 14
+		})
+		makeTextLabel(first, {
+			Text = "Cleaner two-column content, flatter controls, filled toggles, and a normal color picker.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+
+		local second = create("Frame", {
+			Parent = container,
+			BackgroundColor3 = Theme.Input,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0, 0, 0, 86),
+			Size = UDim2.new(1, 0, 0, 88)
+		})
+		addCorner(second, 12)
+		addPadding(second, 12, 12, 12, 12)
+		addList(second, 4, false)
+		makeTextLabel(second, {
+			Text = "Feedback Ready",
+			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+			TextSize = 14
+		})
+		makeTextLabel(second, {
+			Text = "Feedback and settings both send the avatar, username, and message to your endpoint in the same clean style.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+	end, {Column = "left"})
+
+	local updates = updatesTab:AddSection("Panel Notes", "The built-in pages stay on the left rail. Your loader tabs stay on the bottom-right row.", {Column = "right"})
+	updates:AddParagraph("Layout", "The content now fills left and right columns instead of a single stack.")
+	updates:AddParagraph("Borders", "Only buttons and dropdowns keep clear borders. Most controls stay flat.")
+
+	local scriptsMain = scriptsTab:AddSection("Main Controls", "Primary actions for your script page.", {Column = "left"})
+	scriptsMain:AddButton({
 		Title = "Run Example Action",
 		Description = "Swap this callback with your real script logic.",
 		Callback = function()
 			warn("CloudyUI example action fired")
 		end
 	})
-
-	local exampleToggle = scripts:AddToggle({
-		Title = "Example Toggle",
-		Description = "Working toggle callback with live state.",
+	local exampleToggle = scriptsMain:AddToggle({
+		Title = "Enable Feature",
+		Description = "Filled-box toggle with attached color picker.",
 		Default = true,
 		Callback = function(value)
 			warn("Toggle value:", value)
 		end
 	})
 	exampleToggle:Colorpicker({
-		Title = "Toggle Active Color",
-		Default = Color3.fromRGB(112, 162, 255),
+		Title = "Toggle Fill Color",
+		Default = Color3.fromRGB(235, 235, 236),
 		Callback = function(color)
 			warn("Toggle color:", color)
 		end
 	})
-
-	local exampleSlider = scripts:AddSlider({
-		Title = "Example Slider",
+	scriptsMain:AddSlider({
+		Title = "Power",
 		Min = 0,
 		Max = 100,
 		Default = 35,
@@ -2168,26 +2307,25 @@ function CloudyUI:CreateDefaultWindow(config)
 		end
 	})
 
-	scripts:AddDropdown({
-		Title = "Example Dropdown",
+	local scriptsSide = scriptsTab:AddSection("Extra Controls", "Secondary tools stay on the right side.", {Column = "right"})
+	scriptsSide:AddDropdown({
+		Title = "Mode",
 		Items = {"Silent", "Balanced", "Aggressive"},
 		Default = "Balanced",
 		Callback = function(value)
 			warn("Dropdown value:", value)
 		end
 	})
-
-	scripts:AddTextbox({
-		Title = "Example Textbox",
+	scriptsSide:AddTextbox({
+		Title = "Notes",
 		Placeholder = "Write a note or command",
 		Default = "",
 		Callback = function(value)
 			warn("Textbox value:", value)
 		end
 	})
-
-	scripts:AddKeybind({
-		Title = "Example Keybind",
+	scriptsSide:AddKeybind({
+		Title = "Hotkey",
 		Default = "RightShift",
 		Mode = "Toggle",
 		Callback = function(value)
@@ -2195,7 +2333,7 @@ function CloudyUI:CreateDefaultWindow(config)
 		end
 	})
 
-	local settings = settingsTab:AddSection("Appearance", "The settings tab is also a right-side view. Accent changes update the selected navigation and active parts of the UI.")
+	local settings = settingsTab:AddSection("Appearance", "Accent changes only affect active UI parts.", {Column = "left"})
 	settings:AddColorPicker({
 		Title = "Accent Color",
 		Default = selfObject.AccentColor,
@@ -2226,7 +2364,68 @@ function CloudyUI:CreateDefaultWindow(config)
 		end
 	})
 
-	local feedbackInfo = feedbackTab:AddSection("Send Feedback", "Hook this to your FastAPI endpoint. The payload includes Roblox profile data and the written message.")
+	local settingsFeedback = settingsTab:AddSection("Send Feedback", "You can also send a message from settings.", {Column = "right"})
+	local settingsMessage = settingsFeedback:AddTextbox({
+		Title = "Feedback Message",
+		Placeholder = "Write your message here",
+		Lines = 5,
+		Default = ""
+	})
+	local settingsStatus = settingsFeedback:AddParagraph("Status", "Nothing sent yet.")
+	settingsFeedback:AddButton({
+		Title = "Send Feedback",
+		Description = "Posts the typed message using the configured endpoint.",
+		Callback = function()
+			local ok, response = selfObject:SubmitFeedback(settingsMessage:Get())
+			if ok then
+				settingsStatus:SetText("Feedback sent successfully.")
+			else
+				settingsStatus:SetText("Feedback failed: " .. tostring(response))
+			end
+		end
+	})
+
+	feedbackTab:AddCustomCard(function(card, container)
+		container.AutomaticSize = Enum.AutomaticSize.None
+		container.Size = UDim2.new(1, 0, 0, 92)
+
+		local avatar = create("ImageLabel", {
+			Parent = container,
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0, 0, 0, 4),
+			Size = UDim2.fromOffset(42, 42),
+			Image = getAvatarUrl(LocalPlayer.UserId)
+		})
+		addCorner(avatar, 999)
+
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 56, 0, 6),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, -56, 0, 16),
+			Text = LocalPlayer.DisplayName,
+			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+			TextSize = 14
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 56, 0, 24),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, -56, 0, 14),
+			Text = "@" .. LocalPlayer.Name,
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 58),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 28),
+			Text = "Your feedback message will show here in the same clean box style.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+	end, {Column = "left"})
+
+	local feedbackInfo = feedbackTab:AddSection("Send Feedback", "Hook this to your FastAPI endpoint. The payload includes Roblox profile data and the written message.", {Column = "right"})
 	feedbackInfo:AddLabel("If you leave the endpoint box empty, ConfigureFeedback or the endpoint textbox must be set before sending.")
 	local endpointBox = feedbackInfo:AddTextbox({
 		Title = "Endpoint URL",
@@ -2257,7 +2456,7 @@ function CloudyUI:CreateDefaultWindow(config)
 		end
 	})
 
-	local feedbackMeta = feedbackTab:AddSection("Payload Preview", "This is the data the feedback request sends along with the message.")
+	local feedbackMeta = feedbackTab:AddSection("Payload Preview", "This is the data the feedback request sends along with the message.", {Column = "left"})
 	feedbackMeta:AddLabel("Username: " .. LocalPlayer.Name)
 	feedbackMeta:AddLabel("Display Name: " .. LocalPlayer.DisplayName)
 	feedbackMeta:AddLabel("User ID: " .. tostring(LocalPlayer.UserId))

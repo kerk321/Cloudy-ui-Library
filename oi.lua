@@ -156,17 +156,17 @@ end
 local function getAutoWindowMetrics()
 	local device, viewport = getDeviceType()
 	if device == "Phone" then
-		local width = math.min(math.floor(viewport.X * 0.92), 355)
-		local height = math.min(math.floor(viewport.Y * 0.84), 560)
-		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 8, 0.5, -math.floor(height / 2))
+		local width = math.min(math.floor(viewport.X * 0.88), 332)
+		local height = math.min(math.floor(viewport.Y * 0.74), 500)
+		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 6, 0.5, -math.floor(height / 2) - 6)
 	elseif device == "Tablet" then
-		local width = math.min(math.floor(viewport.X * 0.82), 760)
-		local height = math.min(math.floor(viewport.Y * 0.84), 650)
-		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 18, 0.5, -math.floor(height / 2))
+		local width = math.min(math.floor(viewport.X * 0.86), 840)
+		local height = math.min(math.floor(viewport.Y * 0.79), 610)
+		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 20, 0.5, -math.floor(height / 2) - 4)
 	else
-		local width = math.min(math.floor(viewport.X * 0.88), 1060)
-		local height = math.min(math.floor(viewport.Y * 0.88), 740)
-		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 24, 0.5, -math.floor(height / 2))
+		local width = math.min(math.floor(viewport.X * 0.9), 1140)
+		local height = math.min(math.floor(viewport.Y * 0.82), 680)
+		return device, UDim2.fromOffset(width, height), UDim2.new(0.5, -math.floor(width / 2) - 28, 0.5, -math.floor(height / 2) - 6)
 	end
 end
 
@@ -196,12 +196,23 @@ local function makeDraggable(handle, frame)
 		if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
 			return
 		end
+		local viewport = getViewportSize()
 		local delta = Vector2.new(input.Position.X, input.Position.Y) - dragOrigin
+		local baseX = startPosition.X.Scale * viewport.X
+		local baseY = startPosition.Y.Scale * viewport.Y
+		local absoluteX = baseX + startPosition.X.Offset + delta.X
+		local absoluteY = baseY + startPosition.Y.Offset + delta.Y
+		local minVisibleX = -frame.AbsoluteSize.X + math.min(120, math.max(76, math.floor(frame.AbsoluteSize.X * 0.34)))
+		local maxVisibleX = viewport.X - math.min(120, math.max(76, math.floor(frame.AbsoluteSize.X * 0.34)))
+		local minVisibleY = 0
+		local maxVisibleY = viewport.Y - 44
+		local clampedX = math.clamp(absoluteX, minVisibleX, maxVisibleX)
+		local clampedY = math.clamp(absoluteY, minVisibleY, maxVisibleY)
 		frame.Position = UDim2.new(
 			startPosition.X.Scale,
-			startPosition.X.Offset + delta.X,
+			clampedX - baseX,
 			startPosition.Y.Scale,
-			startPosition.Y.Offset + delta.Y
+			clampedY - baseY
 		)
 	end)
 end
@@ -335,6 +346,7 @@ local function createHomeCard(parent, width)
 	local card = create("Frame", {
 		Size = UDim2.new(0, width, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
+		ClipsDescendants = true,
 		BackgroundColor3 = Palette.Surface,
 		BorderSizePixel = 0,
 		ZIndex = 6,
@@ -363,6 +375,7 @@ end
 local function createHomePreview(parent, mode)
 	local preview = create("Frame", {
 		Size = UDim2.new(1, 0, 0, 118),
+		ClipsDescendants = true,
 		BackgroundColor3 = Palette.BackgroundAlt,
 		BorderSizePixel = 0,
 		ZIndex = 8,
@@ -377,13 +390,13 @@ local function createHomePreview(parent, mode)
 
 	if mode == "Updates" then
 		for index, config in ipairs({
-			{ 14, 16, 176, 34, "Patch Notes" },
-			{ 14, 56, 154, 26, "Responsive Tweaks" },
-			{ 14, 88, 118, 10, "Announcements" },
+			{ 0.06, 16, 0.72, 34, "Patch Notes" },
+			{ 0.06, 56, 0.62, 26, "Responsive Tweaks" },
+			{ 0.06, 88, 0.46, 10, "Announcements" },
 		}) do
 			local mini = create("Frame", {
-				Position = UDim2.fromOffset(config[1], config[2]),
-				Size = UDim2.fromOffset(config[3], config[4]),
+				Position = UDim2.new(config[1], 0, 0, config[2]),
+				Size = UDim2.new(config[3], 0, 0, config[4]),
 				BackgroundColor3 = Palette.SurfaceSoft,
 				BackgroundTransparency = index == 3 and 0.18 or 0.05,
 				BorderSizePixel = 0,
@@ -426,7 +439,7 @@ local function createHomePreview(parent, mode)
 			create("Frame", {
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.new(0.5, 0, 0.56, 0),
-				Size = UDim2.fromOffset(90 - ((index - 1) * 12), 1),
+				Size = UDim2.new(0, 74 - ((index - 1) * 10), 0, 1),
 				Rotation = ({ -10, -2, 9, 16 })[index],
 				BackgroundColor3 = Palette.BorderSoft,
 				BorderSizePixel = 0,
@@ -434,7 +447,7 @@ local function createHomePreview(parent, mode)
 				Parent = preview,
 			})
 			local orb = create("Frame", {
-				Position = UDim2.fromOffset(194, y),
+				Position = UDim2.new(0.82, 0, 0, y),
 				Size = UDim2.fromOffset(18, 18),
 				BackgroundColor3 = ({ Color3.fromRGB(243, 109, 73), Color3.fromRGB(84, 164, 255), Color3.fromRGB(229, 183, 60), Color3.fromRGB(92, 92, 96) })[index],
 				BorderSizePixel = 0,
@@ -444,10 +457,10 @@ local function createHomePreview(parent, mode)
 			round(orb, 999)
 		end
 	else
-		for index = 1, 5 do
+		for index = 1, 4 do
 			local block = create("Frame", {
-				Position = UDim2.fromOffset(12 + ((index - 1) * 42), 18 + ((index % 2 == 0) and 8 or 0)),
-				Size = UDim2.fromOffset(38, 60),
+				Position = UDim2.new(0, 12 + ((index - 1) * 46), 0, 20 + ((index % 2 == 0) and 8 or 0)),
+				Size = UDim2.fromOffset(42, 56),
 				BackgroundColor3 = Palette.SurfaceSoft,
 				BorderSizePixel = 0,
 				ZIndex = 9,
@@ -456,7 +469,7 @@ local function createHomePreview(parent, mode)
 			round(block, 10)
 			stroke(block, Palette.BorderSoft, 1, 0.45)
 			createLabel(block, {
-				Text = ({ "Discord", "Status", "Owners", "Links", "Team" })[index],
+				Text = ({ "Discord", "Status", "Owners", "Links" })[index],
 				Font = Enum.Font.GothamSemibold,
 				TextSize = 8,
 				TextWrapped = true,
@@ -554,8 +567,8 @@ function Library:CreateWindow(options)
 	local closeButton = createTopIconButton(rightButtons, "x")
 
 	local hero = create("Frame", {
-		Size = UDim2.new(1, -72, 0, 164),
-		Position = UDim2.new(0, 36, 0, 78),
+		Size = UDim2.new(1, -72, 0, 146),
+		Position = UDim2.new(0, 36, 0, 68),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ZIndex = 7,
@@ -565,9 +578,9 @@ function Library:CreateWindow(options)
 	local heroTitle = createLabel(hero, {
 		Text = heroTitleText,
 		Font = Enum.Font.GothamBold,
-		TextSize = 34,
+		TextSize = 32,
 		TextWrapped = true,
-		Size = UDim2.new(1, -120, 0, 56),
+		Size = UDim2.new(1, -120, 0, 48),
 		Position = UDim2.new(0, 0, 0, 0),
 		ZIndex = 8,
 	})
@@ -577,14 +590,14 @@ function Library:CreateWindow(options)
 		TextColor3 = Palette.Muted,
 		TextSize = 14,
 		TextWrapped = true,
-		Size = UDim2.new(0, 640, 0, 44),
-		Position = UDim2.new(0, 0, 0, 62),
+		Size = UDim2.new(0, 660, 0, 36),
+		Position = UDim2.new(0, 0, 0, 50),
 		ZIndex = 8,
 	})
 
 	local heroButtons = create("Frame", {
 		Size = UDim2.new(0, 280, 0, 34),
-		Position = UDim2.new(0, 0, 0, 122),
+		Position = UDim2.new(0, 0, 0, 102),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ZIndex = 8,
@@ -598,8 +611,8 @@ function Library:CreateWindow(options)
 	local scriptsHeroButton = createPillButton(heroButtons, "Scripts", 78, false)
 
 	local content = create("Frame", {
-		Size = UDim2.new(1, -28, 1, -264),
-		Position = UDim2.new(0, 14, 0, 250),
+		Size = UDim2.new(1, -28, 1, -238),
+		Position = UDim2.new(0, 14, 0, 224),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ZIndex = 7,
@@ -613,6 +626,7 @@ function Library:CreateWindow(options)
 		Hero = hero,
 		HeroTitle = heroTitle,
 		HeroSubtitle = heroSubtitle,
+		HomeCards = {},
 		Tabs = {},
 		TabMap = {},
 		ActiveTab = nil,
@@ -761,6 +775,11 @@ function Library:CreateWindow(options)
 		self.HomeFocus = name
 		updateHeroButtons()
 		self:RenderHome()
+		local target = self.HomeCards[name]
+		if target and homePage.Visible then
+			local offset = target.AbsolutePosition.Y - homeHolder.AbsolutePosition.Y
+			homePage.CanvasPosition = Vector2.new(0, math.max(0, offset - 6))
+		end
 	end
 
 	local function createHomeItemBox(parent, title, meta, body)
@@ -806,10 +825,73 @@ function Library:CreateWindow(options)
 		return box, bodyLabel
 	end
 
+	local function executeScriptEntry(entry)
+		if type(entry.Callback) == "function" then
+			task.spawn(function()
+				local ok, err = pcall(entry.Callback, entry)
+				if not ok then
+					warn("[Cloudy] Script callback failed:", err)
+				end
+			end)
+			return true
+		end
+
+		if type(entry.Execute) == "function" then
+			task.spawn(function()
+				local ok, err = pcall(entry.Execute, entry)
+				if not ok then
+					warn("[Cloudy] Script execute failed:", err)
+				end
+			end)
+			return true
+		end
+
+		if type(entry.Source) == "string" and entry.Source ~= "" then
+			local chunk, loadErr = loadstring(entry.Source)
+			if not chunk then
+				warn("[Cloudy] Source load failed:", loadErr)
+				return false
+			end
+			task.spawn(function()
+				local ok, err = pcall(chunk)
+				if not ok then
+					warn("[Cloudy] Source execution failed:", err)
+				end
+			end)
+			return true
+		end
+
+		local url = entry.Url or entry.URL or entry.Link
+		if type(url) == "string" and url ~= "" then
+			local ok, response = pcall(function()
+				return game:HttpGet(url)
+			end)
+			if not ok then
+				warn("[Cloudy] HttpGet failed:", response)
+				return false
+			end
+			local chunk, loadErr = loadstring(response)
+			if not chunk then
+				warn("[Cloudy] Remote load failed:", loadErr)
+				return false
+			end
+			task.spawn(function()
+				local runOk, runErr = pcall(chunk)
+				if not runOk then
+					warn("[Cloudy] Remote script execution failed:", runErr)
+				end
+			end)
+			return true
+		end
+
+		warn("[Cloudy] No executable script source found for", entry.Name or "Unnamed Script")
+		return false
+	end
+
 	local function renderScripts(cardInner)
 		for _, entry in ipairs(windowObject.HomeData.Scripts) do
 			local row = create("Frame", {
-				Size = UDim2.new(1, 0, 0, 62),
+				Size = UDim2.new(1, 0, 0, 146),
 				BackgroundColor3 = Palette.SurfaceAlt,
 				BorderSizePixel = 0,
 				ZIndex = 8,
@@ -817,16 +899,27 @@ function Library:CreateWindow(options)
 			})
 			round(row, 14)
 			stroke(row, Palette.BorderSoft, 1, 0.35)
+			local imageWrap = create("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.new(0.5, 0, 0, 10),
+				Size = UDim2.fromOffset(58, 58),
+				BackgroundColor3 = Palette.SurfaceSoft,
+				BorderSizePixel = 0,
+				ZIndex = 9,
+				Parent = row,
+			})
+			round(imageWrap, 14)
+			stroke(imageWrap, Palette.BorderSoft, 1, 0.3)
 			local icon = create("ImageLabel", {
-				Size = UDim2.fromOffset(42, 42),
-				Position = UDim2.new(0, 10, 0.5, -21),
+				Size = UDim2.new(1, -8, 1, -8),
+				Position = UDim2.new(0, 4, 0, 4),
 				BackgroundColor3 = Palette.SurfaceSoft,
 				BorderSizePixel = 0,
 				BackgroundTransparency = entry.Image ~= nil and entry.Image ~= "" and 1 or 0,
 				Image = entry.Image or "",
 				ScaleType = Enum.ScaleType.Crop,
 				ZIndex = 9,
-				Parent = row,
+				Parent = imageWrap,
 			})
 			round(icon, 12)
 			if entry.Image == nil or entry.Image == "" then
@@ -843,9 +936,10 @@ function Library:CreateWindow(options)
 			createLabel(row, {
 				Text = entry.Name or "Script",
 				Font = Enum.Font.GothamSemibold,
-				TextSize = 12,
-				Size = UDim2.new(1, -150, 0, 16),
-				Position = UDim2.new(0, 64, 0, 11),
+				TextSize = 13,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				Size = UDim2.new(1, -24, 0, 18),
+				Position = UDim2.new(0, 12, 0, 76),
 				ZIndex = 9,
 			})
 			createLabel(row, {
@@ -853,17 +947,19 @@ function Library:CreateWindow(options)
 				TextColor3 = Palette.Muted,
 				TextSize = 11,
 				TextWrapped = true,
-				Size = UDim2.new(1, -150, 0, 28),
-				Position = UDim2.new(0, 64, 0, 27),
+				TextXAlignment = Enum.TextXAlignment.Center,
+				TextYAlignment = Enum.TextYAlignment.Top,
+				Size = UDim2.new(1, -28, 0, 28),
+				Position = UDim2.new(0, 14, 0, 96),
 				ZIndex = 9,
 			})
 			local executeButton = create("TextButton", {
-				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.new(1, -10, 0.5, 0),
-				Size = UDim2.fromOffset(74, 30),
+				AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, -10),
+				Size = UDim2.fromOffset(122, 30),
 				BackgroundColor3 = Palette.Text,
 				BorderSizePixel = 0,
-				Text = entry.ButtonText or "Execute",
+				Text = "Execute Script",
 				Font = Enum.Font.GothamSemibold,
 				TextSize = 11,
 				TextColor3 = Palette.Background,
@@ -879,9 +975,7 @@ function Library:CreateWindow(options)
 				tween(executeButton, { BackgroundColor3 = Palette.Text })
 			end)
 			executeButton.MouseButton1Click:Connect(function()
-				if entry.Callback then
-					entry.Callback(entry)
-				end
+				executeScriptEntry(entry)
 			end)
 		end
 	end
@@ -954,15 +1048,22 @@ function Library:CreateWindow(options)
 		local currentDevice = getDeviceType()
 		local phone = currentDevice == "Phone"
 		local availableWidth = math.max(content.AbsoluteSize.X - (phone and 0 or 34), 280)
-		local cardWidth = phone and availableWidth or math.max(math.floor((availableWidth - 28) / 3), 272)
-		if phone then
+		local useThreeAcross = not phone and availableWidth >= 900
+		local cardWidth = availableWidth
+		if useThreeAcross then
+			cardWidth = math.floor((availableWidth - 28) / 3)
+		elseif not phone then
+			cardWidth = availableWidth
+		end
+		if phone or not useThreeAcross then
 			homeCardsLayout.FillDirection = Enum.FillDirection.Vertical
 		else
 			homeCardsLayout.FillDirection = Enum.FillDirection.Horizontal
 		end
+		self.HomeCards = {}
 
 		local function createCardWrapper(offset)
-			if phone then
+			if phone or not useThreeAcross then
 				return homeCardsRow
 			end
 			local wrapper = create("Frame", {
@@ -988,6 +1089,7 @@ function Library:CreateWindow(options)
 
 		local updatesCard, updatesInner = createHomeCard(createCardWrapper(16), cardWidth)
 		updatesCard.Name = "UpdatesCard"
+		self.HomeCards.Updates = updatesCard
 		createHomePreview(updatesInner, "Updates")
 		createLabel(updatesInner, {
 			Text = "Updates",
@@ -1010,6 +1112,7 @@ function Library:CreateWindow(options)
 
 		local scriptsCard, scriptsInner = createHomeCard(createCardWrapper(0), cardWidth)
 		scriptsCard.Name = "ScriptsCard"
+		self.HomeCards.Scripts = scriptsCard
 		createHomePreview(scriptsInner, "Scripts")
 		createLabel(scriptsInner, {
 			Text = "Scripts",
@@ -1030,6 +1133,7 @@ function Library:CreateWindow(options)
 
 		local socialsCard, socialsInner = createHomeCard(createCardWrapper(24), cardWidth)
 		socialsCard.Name = "SocialsCard"
+		self.HomeCards.Socials = socialsCard
 		createHomePreview(socialsInner, "Socials")
 		createLabel(socialsInner, {
 			Text = "Socials",
@@ -1836,15 +1940,15 @@ function Library:CreateWindow(options)
 			windowFrame.Position = autoWindowPosition
 			expandedHeight = autoWindowSize
 		end
-		hero.Size = currentDevice == "Phone" and UDim2.new(1, -30, 0, 176) or UDim2.new(1, -72, 0, 164)
-		hero.Position = currentDevice == "Phone" and UDim2.new(0, 15, 0, 68) or UDim2.new(0, 36, 0, 78)
-		heroTitle.TextSize = currentDevice == "Phone" and 24 or (currentDevice == "Tablet" and 29 or 34)
-		heroTitle.Size = currentDevice == "Phone" and UDim2.new(1, 0, 0, 52) or UDim2.new(1, -120, 0, 56)
-		heroSubtitle.Size = currentDevice == "Phone" and UDim2.new(1, 0, 0, 54) or UDim2.new(0, 640, 0, 44)
-		heroSubtitle.Position = UDim2.new(0, 0, 0, currentDevice == "Phone" and 56 or 62)
-		heroButtons.Position = UDim2.new(0, 0, 0, currentDevice == "Phone" and 132 or 122)
-		content.Position = UDim2.new(0, 14, 0, currentDevice == "Phone" and 254 or 250)
-		content.Size = UDim2.new(1, -28, 1, currentDevice == "Phone" and -268 or -264)
+		hero.Size = currentDevice == "Phone" and UDim2.new(1, -24, 0, 156) or (currentDevice == "Tablet" and UDim2.new(1, -52, 0, 150) or UDim2.new(1, -72, 0, 146))
+		hero.Position = currentDevice == "Phone" and UDim2.new(0, 12, 0, 60) or (currentDevice == "Tablet" and UDim2.new(0, 26, 0, 64) or UDim2.new(0, 36, 0, 68))
+		heroTitle.TextSize = currentDevice == "Phone" and 22 or (currentDevice == "Tablet" and 28 or 32)
+		heroTitle.Size = currentDevice == "Phone" and UDim2.new(1, 0, 0, 42) or UDim2.new(1, -120, 0, 48)
+		heroSubtitle.Size = currentDevice == "Phone" and UDim2.new(1, 0, 0, 42) or UDim2.new(0, currentDevice == "Tablet" and 560 or 660, 0, 36)
+		heroSubtitle.Position = UDim2.new(0, 0, 0, currentDevice == "Phone" and 44 or 50)
+		heroButtons.Position = UDim2.new(0, 0, 0, currentDevice == "Phone" and 96 or 102)
+		content.Position = UDim2.new(0, 14, 0, currentDevice == "Phone" and 206 or (currentDevice == "Tablet" and 218 or 224))
+		content.Size = UDim2.new(1, -28, 1, currentDevice == "Phone" and -220 or (currentDevice == "Tablet" and -230 or -238))
 		homeCardsLayout.Padding = UDim.new(0, currentDevice == "Phone" and 12 or 14)
 		self:RenderHome()
 	end

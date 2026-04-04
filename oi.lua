@@ -122,6 +122,14 @@ local function addList(object, padding, horizontal)
 	return layout
 end
 
+local function addTextConstraint(object, minSize, maxSize)
+	create("UITextSizeConstraint", {
+		MinTextSize = minSize or 10,
+		MaxTextSize = maxSize or 18,
+		Parent = object
+	})
+end
+
 local function getViewportSize()
 	local camera = workspace.CurrentCamera
 	if camera then
@@ -139,12 +147,12 @@ local function getProfile()
 	local isPhone = UserInputService.TouchEnabled and (viewport.X < 780 or viewport.Y < 780)
 	local isTablet = UserInputService.TouchEnabled and not isPhone
 
-	local widthScale = isPhone and 0.94 or (isTablet and 0.82 or 0.76)
-	local heightScale = isPhone and 0.84 or (isTablet and 0.80 or 0.78)
+	local widthScale = isPhone and 0.90 or (isTablet and 0.76 or 0.66)
+	local heightScale = isPhone and 0.78 or (isTablet and 0.76 or 0.72)
 
-	local width = math.clamp(math.floor(viewport.X * widthScale), isPhone and 330 or 760, isPhone and 430 or 1180)
-	local height = math.clamp(math.floor(viewport.Y * heightScale), isPhone and 430 or 540, isPhone and 740 or 760)
-	local sidebarWidth = isPhone and 136 or (isTablet and 162 or 196)
+	local width = math.clamp(math.floor(viewport.X * widthScale), isPhone and 300 or 680, isPhone and 390 or 1040)
+	local height = math.clamp(math.floor(viewport.Y * heightScale), isPhone and 400 or 500, isPhone and 660 or 720)
+	local sidebarWidth = isPhone and 120 or (isTablet and 146 or 172)
 
 	return {
 		Device = isPhone and "Phone" or (isTablet and "Tablet" or "PC"),
@@ -1670,22 +1678,24 @@ function CloudyUI:CreateTab(name, options)
 		tab.NavTitle = title
 	end
 
-	local quick = create("TextButton", {
-		Parent = self.QuickTabs,
-		BackgroundColor3 = Theme.Input,
-		BorderSizePixel = 0,
-		AutoButtonColor = false,
-		Size = UDim2.new(0, 92, 0, 26),
-		Text = name,
-		FontFace = Font.fromEnum(Enum.Font.GothamMedium),
-		TextSize = 11,
-		TextColor3 = Theme.Text
-	})
-	addCorner(quick, 999)
-	quick.MouseButton1Click:Connect(function()
-		self:SelectTab(name)
-	end)
-	tab.QuickButton = quick
+	if not options.HideQuickButton then
+		local quick = create("TextButton", {
+			Parent = self.QuickTabs,
+			BackgroundColor3 = Theme.Input,
+			BorderSizePixel = 0,
+			AutoButtonColor = false,
+			Size = UDim2.new(0, 92, 0, 26),
+			Text = options.QuickName or name,
+			FontFace = Font.fromEnum(Enum.Font.GothamMedium),
+			TextSize = 11,
+			TextColor3 = Theme.Text
+		})
+		addCorner(quick, 999)
+		quick.MouseButton1Click:Connect(function()
+			self:SelectTab(name)
+		end)
+		tab.QuickButton = quick
+	end
 
 	if not self.CurrentTab then
 		self:SelectTab(name)
@@ -1820,7 +1830,7 @@ function CloudyUI:BuildHome(tab)
 			BackgroundTransparency = 0.12,
 			BorderSizePixel = 0,
 			Position = UDim2.new(0, 0, 0, 0),
-			Size = UDim2.new(self.Profile.IsPhone and 1 or 0, self.Profile.IsPhone and 0 or 220, 0, self.Profile.IsPhone and 92 or 110)
+			Size = UDim2.new(self.Profile.IsPhone and 1 or 0, self.Profile.IsPhone and 0 or 246, 0, self.Profile.IsPhone and 92 or 110)
 		})
 		addCorner(profileCard, 14)
 
@@ -1834,14 +1844,17 @@ function CloudyUI:BuildHome(tab)
 		})
 		addCorner(avatar, 999)
 
-		makeTextLabel(profileCard, {
+		local profileName = makeTextLabel(profileCard, {
 			Position = UDim2.new(0, self.Profile.IsPhone and 82 or 96, 0, 16),
 			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -(self.Profile.IsPhone and 96 or 108), 0, 20),
+			Size = UDim2.new(1, -(self.Profile.IsPhone and 94 or 106), 0, 20),
 			Text = LocalPlayer.DisplayName,
 			FontFace = Font.fromEnum(Enum.Font.GothamBold),
-			TextSize = self.Profile.IsPhone and 20 or 24
+			TextSize = self.Profile.IsPhone and 14 or 16,
+			TextScaled = true,
+			TextWrapped = false
 		})
+		addTextConstraint(profileName, 10, self.Profile.IsPhone and 14 or 16)
 
 		makeTextLabel(profileCard, {
 			Position = UDim2.new(0, self.Profile.IsPhone and 82 or 96, 0, self.Profile.IsPhone and 40 or 46),
@@ -1885,7 +1898,7 @@ function CloudyUI:BuildHome(tab)
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Position = UDim2.new(0, 0, 0, self.Profile.IsPhone and 108 or 130),
-			Size = UDim2.new(self.Profile.IsPhone and 0.58 or 0.5, -10, 0, self.Profile.IsPhone and 112 or 96)
+			Size = UDim2.new(self.Profile.IsPhone and 0.54 or 0.5, -10, 0, self.Profile.IsPhone and 112 or 96)
 		})
 		addList(activity, 8, false)
 
@@ -1904,7 +1917,7 @@ function CloudyUI:BuildHome(tab)
 			Position = UDim2.new(1, 0, 1, 0),
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Size = UDim2.new(self.Profile.IsPhone and 0.38 or 0.33, 0, 1, 0)
+			Size = UDim2.new(self.Profile.IsPhone and 0.42 or 0.33, 0, 1, 0)
 		})
 		addList(stackWrap, 8, false)
 
@@ -2047,6 +2060,7 @@ function CloudyUI:CreateDefaultWindow(config)
 		ScaleType = Enum.ScaleType.Crop,
 		ImageTransparency = 0.78
 	})
+	gameBackground.Visible = not profile.IsPhone
 	addCorner(gameBackground, 10)
 
 	local gameFade = create("Frame", {
@@ -2125,28 +2139,6 @@ function CloudyUI:CreateDefaultWindow(config)
 		Position = UDim2.new(0, 26, 0, 24)
 	})
 
-	makeTextLabel(topbar, {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -52, 0, 6),
-		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(0, 16, 0, 16),
-		Text = "o",
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextColor3 = Theme.MutedText,
-		TextSize = 14
-	})
-
-	makeTextLabel(topbar, {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -28, 0, 6),
-		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(0, 16, 0, 16),
-		Text = "_",
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextColor3 = Theme.MutedText,
-		TextSize = 16
-	})
-
 	local body = create("Frame", {
 		Parent = main,
 		BackgroundTransparency = 1,
@@ -2203,14 +2195,17 @@ function CloudyUI:CreateDefaultWindow(config)
 	})
 	addCorner(brandAvatar, 999)
 
-	makeTextLabel(brandCard, {
+	local brandName = makeTextLabel(brandCard, {
 		Position = UDim2.new(0, profile.IsPhone and 72 or 82, 0, 16),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -92, 0, 18),
+		Size = UDim2.new(1, -88, 0, 18),
 		Text = LocalPlayer.DisplayName,
 		FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
-		TextSize = 15
+		TextSize = 12,
+		TextScaled = true,
+		TextWrapped = false
 	})
+	addTextConstraint(brandName, 9, 12)
 
 	makeTextLabel(brandCard, {
 		Position = UDim2.new(0, profile.IsPhone and 72 or 82, 0, 36),
@@ -2317,11 +2312,11 @@ function CloudyUI:CreateDefaultWindow(config)
 		selfObject:ApplyResponsiveLayout(false)
 	end)
 
-	local homeTab = selfObject:CreateTab("Home", {HideSidebarButton = true})
-	local updatesTab = selfObject:CreateTab("Updates")
-	local scriptsTab = selfObject:CreateTab("Scripts")
-	local feedbackTab = selfObject:CreateTab("Feedback")
-	local settingsTab = selfObject:CreateTab("Settings")
+	local homeTab = selfObject:CreateTab("Home", {HideSidebarButton = true, QuickName = "Home"})
+	local updatesTab = selfObject:CreateTab("Updates", {HideQuickButton = true})
+	local scriptsTab = selfObject:CreateTab("Scripts", {HideQuickButton = true})
+	local feedbackTab = selfObject:CreateTab("Feedback", {HideQuickButton = true})
+	local settingsTab = selfObject:CreateTab("Settings", {HideQuickButton = true})
 
 	brandCard.MouseButton1Click:Connect(function()
 		selfObject:SelectTab("Home")
@@ -2490,7 +2485,7 @@ function CloudyUI:Tab(name, options)
 end
 
 local App = CloudyUI:CreateDefaultWindow({
-	Title = "Cloudy Control",
+	Title = "Cloudy Developer",
 	Subtitle = "Home, updates, scripts, feedback, and settings with responsive sizing.",
 	AccentColor = Theme.Accent,
 	FeedbackEndpoint = DEFAULT_FEEDBACK_ENDPOINT

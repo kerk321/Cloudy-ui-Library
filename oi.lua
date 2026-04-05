@@ -1330,7 +1330,8 @@ local Library do
                     ZIndex = 2,
                     BorderSizePixel = 0,
                     BackgroundColor3 = FromRGB(255, 255, 255),
-                    BackgroundTransparency = 1
+                    BackgroundTransparency = 1,
+                    Visible = false
                 })
 
                 Instances:Create("UICorner", {
@@ -1375,13 +1376,11 @@ local Library do
                     Items["Inline"]:ChangeItemTheme({BackgroundColor3 = "Accent"})
 
                     Items["Inline"]:Tween(nil, {BackgroundColor3 = Library.Theme.Accent})
-                    Items["Dot"]:Tween(nil, {BackgroundTransparency = 0, BackgroundColor3 = FromRGB(255, 255, 255)})
                     Items["Text"]:Tween(nil, {TextTransparency = 0.05})
                 else
                     Items["Inline"]:ChangeItemTheme({BackgroundColor3 = "Element"})
 
                     Items["Inline"]:Tween(nil, {BackgroundColor3 = Library.Theme.Element})
-                    Items["Dot"]:Tween(nil, {BackgroundTransparency = 1, BackgroundColor3 = Library.Theme.Text})
                     Items["Text"]:Tween(nil, {TextTransparency = 0.5})
                 end
 
@@ -5387,6 +5386,21 @@ local Library do
                     BackgroundColor3 = FromRGB(16, 18, 21)
                 })  Items["Notification"]:AddToTheme({BackgroundColor3 = "Background"})
 
+                Items["AccentBar"] = Instances:Create("Frame", {
+                    Parent = Items["Notification"].Instance,
+                    Name = "\0",
+                    BorderSizePixel = 0,
+                    Position = UDim2New(0, 0, 0, 0),
+                    Size = UDim2New(0, 3, 1, 0),
+                    BackgroundColor3 = Library.Theme.Accent
+                })  Items["AccentBar"]:AddToTheme({BackgroundColor3 = "Accent"})
+
+                Instances:Create("UICorner", {
+                    Parent = Items["AccentBar"].Instance,
+                    Name = "\0",
+                    CornerRadius = UDimNew(0, 5)
+                })
+
                 Instances:Create("UIStroke", {
                     Parent = Items["Notification"].Instance,
                     Name = "\0",
@@ -5407,7 +5421,7 @@ local Library do
                     PaddingTop = UDimNew(0, 8),
                     PaddingBottom = UDimNew(0, 8),
                     PaddingRight = UDimNew(0, 8),
-                    PaddingLeft = UDimNew(0, 8)
+                    PaddingLeft = UDimNew(0, 12)
                 })
 
                 if Notification.Icon then 
@@ -5416,10 +5430,10 @@ local Library do
                         Name = "\0",
                         ImageColor3 = Notification.IconColor,
                         BorderColor3 = FromRGB(0, 0, 0),
-                        AnchorPoint = Vector2New(1, 0),
-                        Image = "rbxassetid://"..Notification.Icon,
+                        AnchorPoint = Vector2New(0, 0),
+                        Image = ResolveImage(Notification.Icon),
                         BackgroundTransparency = 1,
-                        Position = UDim2New(1, 5, 0, 0),
+                        Position = UDim2New(0, 0, 0, 2),
                         Size = UDim2New(0, 22, 0, 22),
                         BorderSizePixel = 0,
                         BackgroundColor3 = FromRGB(255, 255, 255)
@@ -5435,7 +5449,7 @@ local Library do
                     Text = Notification.Name,
                     Size = UDim2New(0, 0, 0, 15),
                     BackgroundTransparency = 1,
-                    Position = UDim2New(0, 0, 0, 2),
+                    Position = UDim2New(0, Notification.Icon and 30 or 0, 0, 2),
                     BorderSizePixel = 0,
                     AutomaticSize = Enum.AutomaticSize.X,
                     TextSize = 14,
@@ -5452,7 +5466,7 @@ local Library do
                     Size = UDim2New(0, 0, 0, 15),
                     BorderSizePixel = 0,
                     BackgroundTransparency = 1,
-                    Position = UDim2New(0, 0, 0, 24),
+                    Position = UDim2New(0, Notification.Icon and 30 or 0, 0, 24),
                     BorderColor3 = FromRGB(0, 0, 0),
                     AutomaticSize = Enum.AutomaticSize.X,
                     TextSize = 14,

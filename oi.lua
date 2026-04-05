@@ -337,7 +337,7 @@ local Library do
             ["Outline"] = FromRGB(0, 0, 0),
             ["Dark Liner"] = FromRGB(56, 56, 56),
             ["Risky"] = FromRGB(255, 50, 50),
-            ["Accent"] = FromRGB(31, 226, 130)
+            ["Accent"] = FromRGB(82, 146, 255)
         },
 
         ["Bitchbot"] = {
@@ -812,9 +812,9 @@ local Library do
             ContentTop = 77,
             ContentBottom = 93,
             SidePadding = 13,
-            TabGap = 10,
-            TabButtonWidth = 112,
-            TabButtonHeight = 25,
+            TabGap = 8,
+            TabButtonWidth = 96,
+            TabButtonHeight = 22,
             DropdownHeight = 17,
             DropdownMaxSize = 120,
             DropdownOptionHeight = 15
@@ -829,9 +829,9 @@ local Library do
             Metrics.ContentTop = 86
             Metrics.ContentBottom = 102
             Metrics.SidePadding = 13
-            Metrics.TabGap = 8
-            Metrics.TabButtonWidth = 96
-            Metrics.TabButtonHeight = 24
+            Metrics.TabGap = 6
+            Metrics.TabButtonWidth = 84
+            Metrics.TabButtonHeight = 22
             Metrics.DropdownHeight = 24
             Metrics.DropdownMaxSize = 164
             Metrics.DropdownOptionHeight = 22
@@ -839,13 +839,16 @@ local Library do
             Metrics.Width = math.clamp(Width, 500, math.min(ViewportSize.X - 42, 720))
             Metrics.Height = math.clamp(Height, 420, math.min(ViewportSize.Y - 40, 600))
             Metrics.TitleWidth = 150
-            Metrics.TabButtonWidth = 108
+            Metrics.TabButtonWidth = 92
+            Metrics.TabButtonHeight = 22
             Metrics.DropdownMaxSize = 140
             Metrics.DropdownOptionHeight = 18
         else
             Metrics.Width = math.clamp(Width, 520, math.min(ViewportSize.X - 80, 860))
             Metrics.Height = math.clamp(Height, 460, math.min(ViewportSize.Y - 70, 640))
             Metrics.TitleWidth = 148
+            Metrics.TabButtonWidth = 92
+            Metrics.TabButtonHeight = 22
             Metrics.DropdownMaxSize = 130
             Metrics.DropdownOptionHeight = 16
         end
@@ -2680,6 +2683,8 @@ local Library do
                                 Value:Toggle("Inactive")
                             end
                         end
+
+                        Dropdown:SetOpen(false)
                     else
                         Dropdown.Value = nil
 
@@ -2745,6 +2750,7 @@ local Library do
     end
 
     Components.Colorpicker = function(Data)
+        local Metrics = Library:GetWindowMetrics(Data.WindowSize)
         local Colorpicker = {
             Hue = 0,
             Saturation = 0,
@@ -2760,6 +2766,9 @@ local Library do
             Pages = { },
 
             Flag = Data.Flag,
+
+            CommittedColor = Data.Default or Color3.fromRGB(255, 255, 255),
+            CommittedAlpha = Data.Alpha or 0,
 
             OnAnimationChanged = nil,
 
@@ -2820,7 +2829,7 @@ local Library do
 
             Items["ColorpickerWindow"] = Components.Window({
                 Position = UDim2New(0, Camera.ViewportSize.X / 3, 0, Camera.ViewportSize.Y / 3),
-                Size = UDim2New(0, 263, 0, 243),
+                Size = Metrics.DeviceType == "Phone" and UDim2New(0, 286, 0, 308) or UDim2New(0, 278, 0, 286),
                 Parent = Library.Holder,
                 Visible = false,
                 IsTextButton = true,
@@ -2871,7 +2880,7 @@ local Library do
                 Name = "\0",
                 Position = UDim2New(0.12, -12, 0, 60),
                 BorderColor3 = FromRGB(0, 0, 0),
-                Size = UDim2New(0.875, -2, 1, -69),
+                Size = UDim2New(0.875, -2, 1, -106),
                 BorderSizePixel = 2,
                 BackgroundColor3 = FromRGB(13, 13, 13)
             })  Items["Content"]:AddToTheme({BackgroundColor3 = "Inline", BorderColor3 = "Outline"})
@@ -3231,6 +3240,32 @@ local Library do
 
             PasteButtonItems["Button"].Instance.Position = UDim2New(0, 70, 0, 77)
             PasteButtonItems["Button"].Instance.Size = UDim2New(1, -75, 0, 17)
+
+            local ApplyButton, ApplyButtonItems = Components.Button({
+                Name = "Apply",
+                Parent = Items["ColorpickerWindow"]["Inline"],
+                Callback = function()
+                    Colorpicker:Commit()
+                    Colorpicker:SetOpen(false)
+                end
+            })
+
+            ApplyButtonItems["Button"].Instance.AnchorPoint = Vector2New(0, 1)
+            ApplyButtonItems["Button"].Instance.Position = UDim2New(0, 12, 1, -12)
+            ApplyButtonItems["Button"].Instance.Size = UDim2New(0.5, -18, 0, 22)
+
+            local CancelButton, CancelButtonItems = Components.Button({
+                Name = "Cancel",
+                Parent = Items["ColorpickerWindow"]["Inline"],
+                Callback = function()
+                    Colorpicker:Set(Colorpicker.CommittedColor, Colorpicker.CommittedAlpha)
+                    Colorpicker:SetOpen(false)
+                end
+            })
+
+            CancelButtonItems["Button"].Instance.AnchorPoint = Vector2New(1, 1)
+            CancelButtonItems["Button"].Instance.Position = UDim2New(1, -12, 1, -12)
+            CancelButtonItems["Button"].Instance.Size = UDim2New(0.5, -18, 0, 22)
         end
 
         local SlidingPalette = false
@@ -3238,6 +3273,23 @@ local Library do
         local SlidingAlpha = false 
         
         local Debounce = false 
+
+        function Colorpicker:Commit()
+            Colorpicker.CommittedColor = Colorpicker.Color
+            Colorpicker.CommittedAlpha = Colorpicker.Alpha
+
+            Items["ColorpickerButton"]:Tween(nil, {BackgroundColor3 = Colorpicker.Color})
+            Library.Flags[Colorpicker.Flag] = {
+                HexValue = Colorpicker.HexValue,
+                Color = Colorpicker.Color,
+                Alpha = Colorpicker.Alpha,
+                Flag = Colorpicker.Flag
+            }
+
+            if Data.Callback then
+                Library:SafeCall(Data.Callback, Colorpicker.Color, Colorpicker.Alpha)
+            end
+        end
 
         function Colorpicker:Set(Color, Alpha)
             if type(Color) == "table" then 
@@ -3274,7 +3326,6 @@ local Library do
             Colorpicker.HexValue = Colorpicker.Color:ToHex()
 
             Items["Palette"]:Tween(nil, {BackgroundColor3 = FromHSV(Colorpicker.Hue, 1, 1)})
-            Items["ColorpickerButton"]:Tween(nil, {BackgroundColor3 = Colorpicker.Color})
 
             Items["CurrentColor"]:Tween(nil, {BackgroundColor3 = Colorpicker.Color})
 
@@ -3290,19 +3341,8 @@ local Library do
             Items["Hex"].Instance.Text = "HEX: ".. Library:ToRich(Colorpicker.HexValue, Colorpicker.Color)
             Items["HSV"].Instance.Text = "HSV: ".. Library:ToRich("" .. Hue .. ", ".. Saturation .. ", ".. Value, Colorpicker.Color)
 
-            Library.Flags[Colorpicker.Flag] = {
-                HexValue = Colorpicker.HexValue,
-                Color = Colorpicker.Color,
-                Alpha = Colorpicker.Alpha,
-                Flag = Colorpicker.Flag
-            }
-
             if not IsFromAlpha then 
                 Items["Alpha"]:Tween(nil, {BackgroundColor3 = Colorpicker.Color})
-            end
-
-            if Data.Callback then
-                Library:SafeCall(Data.Callback, Colorpicker.Color, Colorpicker.Alpha)
             end
         end
 
@@ -3311,7 +3351,8 @@ local Library do
 
             if Colorpicker.IsOpen then 
                 Debounce = true 
-                Items["ColorpickerWindow"]["Outline"].Instance.Position = UDim2New(0, Items["ColorpickerButton"].Instance.AbsolutePosition.X, 0, Items["ColorpickerButton"].Instance.AbsolutePosition.Y + 225)
+                Colorpicker:Set(Colorpicker.CommittedColor, Colorpicker.CommittedAlpha)
+                Items["ColorpickerWindow"]["Outline"].Instance.Position = UDim2New(0, Items["ColorpickerButton"].Instance.AbsolutePosition.X, 0, Items["ColorpickerButton"].Instance.AbsolutePosition.Y + (Metrics.DeviceType == "Phone" and -160 or 24))
 
                 Items["ColorpickerWindow"]["Outline"].Instance.Visible = true 
                 Items["ColorpickerWindow"]["Outline"].Instance.ZIndex = 25
@@ -3443,12 +3484,12 @@ local Library do
             end
         end
 
-        Items["ColorpickerButton"]:Connect("MouseButton1Down", function()
+        Items["ColorpickerButton"]:Connect("Activated", function()
             Colorpicker:SetOpen(not Colorpicker.IsOpen)
         end)
 
         Library:Connect(UserInputService.InputBegan, function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 if Debounce then 
                     return 
                 end
@@ -3457,55 +3498,56 @@ local Library do
                     return 
                 end
 
-                if Library:IsMouseOverFrame(Items["ColorpickerWindow"]["Outline"].Instance) then 
+                if Library:IsPointOverFrame(Items["ColorpickerWindow"]["Outline"].Instance, Input.Position) or Library:IsPointOverFrame(Items["ColorpickerButton"].Instance, Input.Position) then 
                     return 
                 end
 
+                Colorpicker:Set(Colorpicker.CommittedColor, Colorpicker.CommittedAlpha)
                 Colorpicker:SetOpen(false)
             end
         end)
 
         Items["Palette"]:Connect("InputBegan", function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 SlidingPalette = true
                 Colorpicker:SlidePalette(Input)
             end
         end)
 
         Items["Palette"]:Connect("InputEnded", function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 SlidingPalette = false
             end
         end)
 
         Items["Hue"]:Connect("InputBegan", function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 SlidingHue = true
                 Colorpicker:SlideHue(Input)
             end
         end)
 
         Items["Hue"]:Connect("InputEnded", function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 SlidingHue = false
             end
         end)
 
         Items["Alpha"]:Connect("InputBegan", function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 SlidingAlpha = true
                 Colorpicker:SlideAlpha(Input)
             end
         end)
 
         Items["Alpha"]:Connect("InputEnded", function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                 SlidingAlpha = false
             end
         end)
 
         Library:Connect(UserInputService.InputChanged, function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseMovement then
+            if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
                 if SlidingPalette then
                     Colorpicker:SlidePalette(Input)
                 end
@@ -3522,6 +3564,7 @@ local Library do
 
         if Data.Default then
             Colorpicker:Set(Data.Default, Data.Alpha)
+            Colorpicker:Commit()
         end
 
         Library.SetFlags[Colorpicker.Flag] = function(Value)
@@ -3557,6 +3600,50 @@ local Library do
                 RichText = true,
                 TextSize = 12,
                 BackgroundColor3 = FromRGB(255, 255, 255)
+            })  Items["Text"]:AddToTheme({TextColor3 = "Text"})
+        end
+
+        return Items
+    end
+
+    Components.Divider = function(Data)
+        local Items = { } do
+            Items["Divider"] = Instances:Create("Frame", {
+                Parent = Data.Parent.Instance,
+                BackgroundTransparency = 1,
+                Name = "\0",
+                BorderSizePixel = 0,
+                Size = UDim2New(1, 0, 0, 14)
+            })
+
+            Items["Left"] = Instances:Create("Frame", {
+                Parent = Items["Divider"].Instance,
+                BorderSizePixel = 0,
+                BackgroundColor3 = FromRGB(56, 56, 56),
+                Position = UDim2New(0, 0, 0.5, 0),
+                Size = UDim2New(0.5, -28, 0, 1)
+            })  Items["Left"]:AddToTheme({BackgroundColor3 = "Dark Liner"})
+
+            Items["Right"] = Instances:Create("Frame", {
+                Parent = Items["Divider"].Instance,
+                AnchorPoint = Vector2New(1, 0),
+                BorderSizePixel = 0,
+                BackgroundColor3 = FromRGB(56, 56, 56),
+                Position = UDim2New(1, 0, 0.5, 0),
+                Size = UDim2New(0.5, -28, 0, 1)
+            })  Items["Right"]:AddToTheme({BackgroundColor3 = "Dark Liner"})
+
+            Items["Text"] = Instances:Create("TextLabel", {
+                Parent = Items["Divider"].Instance,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                FontFace = Library.Font,
+                Text = Data.Text or "Divider",
+                TextColor3 = FromRGB(180, 180, 180),
+                Position = UDim2New(0.5, -50, 0, 0),
+                Size = UDim2New(0, 100, 1, 0),
+                TextSize = 11,
+                TextXAlignment = Enum.TextXAlignment.Center
             })  Items["Text"]:AddToTheme({TextColor3 = "Text"})
         end
 
@@ -4379,28 +4466,22 @@ local Library do
             Items["Pages"] = Instances:Create("Frame", {
                 Parent = Items["Inline"].Instance,
                 Name = "\0",
-                Position = Metrics.DeviceType == "Phone" and UDim2New(0, Metrics.SidePadding, 0, Metrics.HeaderTop) or UDim2New(0, Metrics.SidePadding + Metrics.TitleWidth + 12, 0, Metrics.HeaderTop),
+                BackgroundTransparency = 1,
+                Position = UDim2New(0, Metrics.SidePadding, 0, Metrics.HeaderTop),
                 BorderColor3 = FromRGB(0, 0, 0),
-                Size = Metrics.DeviceType == "Phone" and UDim2New(1, -(Metrics.SidePadding * 2), 0, Metrics.HeaderHeight) or UDim2New(1, -(Metrics.SidePadding * 2 + Metrics.TitleWidth + 12), 0, Metrics.HeaderHeight),
-                BorderSizePixel = 2,
+                Size = UDim2New(1, -(Metrics.SidePadding * 2), 0, Metrics.HeaderHeight),
+                BorderSizePixel = 0,
                 BackgroundColor3 = FromRGB(13, 13, 13)
-            })  Items["Pages"]:AddToTheme({BackgroundColor3 = "Inline", BorderColor3 = "Outline"})
-
-            Instances:Create("UIStroke", {
-                Parent = Items["Pages"].Instance,
-                Color = FromRGB(68, 68, 68),
-                LineJoinMode = Enum.LineJoinMode.Miter,
-                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            }):AddToTheme({Color = "Border"})
+            })
 
             Items["RealHolder"] = Instances:Create("ScrollingFrame", {
                 Parent = Items["Pages"].Instance,
                 Name = "\0",
                 Active = true,
                 BackgroundTransparency = 1,
-                Position = UDim2New(0, 10, 0, 0),
+                Position = UDim2New(0, 0, 0, 0),
                 BorderColor3 = FromRGB(0, 0, 0),
-                Size = UDim2New(1, -20, 1, 0),
+                Size = UDim2New(1, 0, 1, 0),
                 BorderSizePixel = 0,
                 CanvasSize = UDim2New(0, 0, 0, 0),
                 ScrollBarThickness = 0,
@@ -4419,7 +4500,8 @@ local Library do
 
             Instances:Create("UIPadding", {
                 Parent = Items["RealHolder"].Instance,
-                PaddingRight = UDimNew(0, 2)
+                PaddingRight = UDimNew(0, 2),
+                PaddingLeft = UDimNew(0, 0)
             })
 
             Library:Connect(TabList.Instance:GetPropertyChangedSignal("AbsoluteContentSize"), function()
@@ -5042,7 +5124,8 @@ local Library do
                 Default = Colorpicker.Default,
                 Callback = Colorpicker.Callback,
                 Count = Colorpicker.Count,
-                Alpha = Colorpicker.Alpha
+                Alpha = Colorpicker.Alpha,
+                WindowSize = Colorpicker.Window.Size
             })
 
             function Colorpicker:Set(Value, Alpha)
@@ -5308,7 +5391,8 @@ local Library do
                 Default = Colorpicker.Default,
                 Callback = Colorpicker.Callback,
                 Count = Colorpicker.Count,
-                Alpha = Colorpicker.Alpha
+                Alpha = Colorpicker.Alpha,
+                WindowSize = Colorpicker.Window.Size
             })
 
             function Colorpicker:Set(Value, Alpha)
@@ -5409,6 +5493,30 @@ local Library do
         end
 
         return Textbox
+    end
+
+    Library.Sections.Divider = function(self, Text)
+        local Divider = {
+            Window = self.Window,
+            Page = self.Page,
+            Section = self,
+            Text = Text or "Divider"
+        }
+
+        local Items = Components.Divider({
+            Parent = Divider.Section.Items["Content"],
+            Text = Divider.Text
+        })
+
+        function Divider:Set(TextValue)
+            Items["Text"].Instance.Text = TextValue
+        end
+
+        function Divider:SetVisibility(Bool)
+            Items["Divider"].Instance.Visible = Bool
+        end
+
+        return Divider
     end
 
     Library.Sections.Listbox = function(self, Data)

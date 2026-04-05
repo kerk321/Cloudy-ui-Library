@@ -14,20 +14,20 @@ CloudyUI.__index = CloudyUI
 
 local Theme = {
 	Background = Color3.fromRGB(3, 3, 4),
-	WindowTop = Color3.fromRGB(8, 8, 10),
-	WindowBottom = Color3.fromRGB(6, 6, 8),
-	Sidebar = Color3.fromRGB(8, 8, 10),
-	Section = Color3.fromRGB(12, 12, 15),
-	SectionSoft = Color3.fromRGB(18, 18, 22),
-	Stroke = Color3.fromRGB(36, 36, 40),
+	WindowTop = Color3.fromRGB(3, 3, 4),
+	WindowBottom = Color3.fromRGB(3, 3, 4),
+	Sidebar = Color3.fromRGB(4, 4, 5),
+	Section = Color3.fromRGB(6, 6, 7),
+	SectionSoft = Color3.fromRGB(9, 9, 10),
+	Stroke = Color3.fromRGB(228, 228, 230),
 	Text = Color3.fromRGB(242, 242, 244),
-	MutedText = Color3.fromRGB(132, 132, 138),
-	Input = Color3.fromRGB(14, 14, 17),
-	InputSoft = Color3.fromRGB(20, 20, 24),
+	MutedText = Color3.fromRGB(182, 182, 186),
+	Input = Color3.fromRGB(8, 8, 9),
+	InputSoft = Color3.fromRGB(10, 10, 11),
 	Success = Color3.fromRGB(78, 196, 139),
 	Danger = Color3.fromRGB(215, 92, 92),
 	Accent = Color3.fromRGB(235, 235, 236),
-	AccentSoft = Color3.fromRGB(29, 29, 33)
+	AccentSoft = Color3.fromRGB(18, 18, 20)
 }
 
 local function getGuiParent()
@@ -375,17 +375,8 @@ local function makeCard(parent, radius)
 		Position = UDim2.new(0, 3, 0, 0)
 	})
 
-	create("UIGradient", {
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 16, 18)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(9, 9, 11))
-		}),
-		Rotation = 90,
-		Parent = card
-	})
-
 	addCorner(card, radius or 18)
-	addStroke(card, Color3.fromRGB(54, 54, 60), 1, 0.08)
+	addStroke(card, Theme.Stroke, 1, 0.86)
 	return card
 end
 
@@ -532,15 +523,15 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 
 	local shell = create("Frame", {
 		Parent = parent,
-		BackgroundColor3 = Theme.SectionSoft,
+		BackgroundColor3 = Theme.Background,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0),
 		Visible = false
 	})
-	addCorner(shell, 12)
-	addStroke(shell, Color3.fromRGB(56, 56, 62), 1, 0.14)
-	addPadding(shell, 10, 10, 10, 10)
+	addCorner(shell, 16)
+	addStroke(shell, Theme.Stroke, 1, 0.84)
+	addPadding(shell, 12, 12, 12, 12)
 	addList(shell, 8, false)
 
 	local titleRow = create("Frame", {
@@ -551,24 +542,40 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 	})
 
 	makeTextLabel(titleRow, {
-		Text = "Pick Color",
-		TextColor3 = Theme.MutedText,
-		TextSize = 12,
+		Text = "Color Picker",
+		TextColor3 = Theme.Text,
+		TextSize = 13,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -60, 0, 16),
+		Size = UDim2.new(1, -96, 0, 16),
 		Position = UDim2.new(0, 0, 0, 1)
 	})
 
 	local preview = create("Frame", {
 		Parent = titleRow,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, 0, 0.5, 0),
+		Position = UDim2.new(1, -36, 0.5, 0),
 		BackgroundColor3 = item.Value,
 		BorderSizePixel = 0,
-		Size = UDim2.fromOffset(28, 18)
+		Size = UDim2.fromOffset(18, 18)
 	})
-	addCorner(preview, 999)
-	addStroke(preview, Color3.fromRGB(230, 230, 232), 1, 0.32)
+	addCorner(preview, 5)
+	addStroke(preview, Theme.Stroke, 1, 0.76)
+
+	local closeButton = create("TextButton", {
+		Parent = titleRow,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
+		BackgroundColor3 = Theme.Input,
+		BorderSizePixel = 0,
+		AutoButtonColor = false,
+		Size = UDim2.fromOffset(26, 18),
+		Text = "X",
+		TextColor3 = Theme.Text,
+		TextSize = 11,
+		FontFace = Font.fromEnum(Enum.Font.GothamBold)
+	})
+	addCorner(closeButton, 5)
+	addStroke(closeButton, Theme.Stroke, 1, 0.82)
 
 	local pickerRow = create("Frame", {
 		Parent = shell,
@@ -668,32 +675,49 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		Parent = shell,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 0, 28)
+		Size = UDim2.new(1, 0, 0, 30)
 	})
 
 	local hexBox = makeInputBox(bottomRow, {
 		BackgroundColor3 = Theme.Input,
-		Size = UDim2.new(1, -76, 0, 28),
+		Size = UDim2.new(1, -124, 0, 30),
 		Text = colorToHex(item.Value),
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center
 	})
+	addStroke(hexBox, Theme.Stroke, 1, 0.84)
 
 	local applyHexButton = create("TextButton", {
+		Parent = bottomRow,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -56, 0, 0),
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		BorderSizePixel = 0,
+		AutoButtonColor = false,
+		Size = UDim2.fromOffset(54, 30),
+		Text = "Apply",
+		TextColor3 = Color3.fromRGB(5, 5, 6),
+		TextSize = 12,
+		FontFace = Font.fromEnum(Enum.Font.GothamMedium)
+	})
+	addCorner(applyHexButton, 10)
+	addStroke(applyHexButton, Theme.Stroke, 1, 0.94)
+
+	local closeFooterButton = create("TextButton", {
 		Parent = bottomRow,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, 0, 0, 0),
 		BackgroundColor3 = Theme.Input,
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
-		Size = UDim2.fromOffset(68, 28),
-		Text = "Apply",
+		Size = UDim2.fromOffset(48, 30),
+		Text = "Close",
 		TextColor3 = Theme.Text,
-		TextSize = 12,
+		TextSize = 11,
 		FontFace = Font.fromEnum(Enum.Font.GothamMedium)
 	})
-	addCorner(applyHexButton, 10)
-	addStroke(applyHexButton, Theme.Stroke, 1, 0.18)
+	addCorner(closeFooterButton, 10)
+	addStroke(closeFooterButton, Theme.Stroke, 1, 0.84)
 
 	local function updateVisuals(skipCallback)
 		local color = Color3.fromHSV(hue, saturation, value)
@@ -786,6 +810,12 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		if applyHex(typedText) then
 			item:SetVisible(false)
 		end
+	end)
+	closeButton.MouseButton1Click:Connect(function()
+		item:SetVisible(false)
+	end)
+	closeFooterButton.MouseButton1Click:Connect(function()
+		item:SetVisible(false)
 	end)
 
 	UserInputService.InputBegan:Connect(function(input)
@@ -1113,23 +1143,11 @@ function Section:AddToggle(options)
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
 			LayoutOrder = -1,
-			Size = UDim2.new(0, 22, 0, 22),
+			Size = UDim2.new(0, 18, 0, 18),
 			Text = ""
 		})
-		addCorner(colorButton, 999)
-		addStroke(colorButton, Color3.fromRGB(230, 230, 232), 1, 0.22)
-		colorButtonGradient = create("UIGradient", {
-			Rotation = 90,
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-				ColorSequenceKeypoint.new(1, defaultColor)
-			}),
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 0.72),
-				NumberSequenceKeypoint.new(1, 1)
-			}),
-			Parent = colorButton
-		})
+		addCorner(colorButton, 4)
+		addStroke(colorButton, Theme.Stroke, 1, 0.8)
 
 		local pickerObject = createColorPickerWidget(panel, defaultColor, function(color)
 			item:SetColor(color)
@@ -1616,11 +1634,12 @@ function Section:AddColorPicker(options)
 		Parent = header,
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -20, 0.5, 0),
-		Size = UDim2.new(0, 28, 0, 16),
+		Size = UDim2.new(0, 18, 0, 18),
 		BackgroundColor3 = default,
 		BorderSizePixel = 0
 	})
-	addCorner(preview, 6)
+	addCorner(preview, 4)
+	addStroke(preview, Theme.Stroke, 1, 0.8)
 
 	local picker = createColorPickerWidget(shell, default, function(color)
 		item.Value = color
@@ -1682,7 +1701,7 @@ end
 function Tab:AddSection(title, description, options)
 	local parentColumn = resolveTabColumn(self, options)
 	local card = makeCard(parentColumn, 18)
-	card.BackgroundTransparency = 0.08
+	card.BackgroundTransparency = 0
 	addPadding(card, 16, 16, 16, 16)
 	local container = create("Frame", {
 		Parent = card,
@@ -1720,7 +1739,7 @@ end
 function Tab:AddCustomCard(builder, options)
 	local parentColumn = resolveTabColumn(self, options)
 	local card = makeCard(parentColumn, 18)
-	card.BackgroundTransparency = 0.08
+	card.BackgroundTransparency = 0
 	addPadding(card, 16, 16, 16, 16)
 	local container = create("Frame", {
 		Parent = card,
@@ -1760,18 +1779,18 @@ function CloudyUI:RefreshTabVisuals()
 		local selected = self.CurrentTab == tab
 		if tab.NavButton then
 			tween(tab.NavButton, {
-				BackgroundColor3 = selected and Color3.fromRGB(19, 19, 22) or Color3.fromRGB(12, 12, 14)
+				BackgroundColor3 = selected and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(6, 6, 7)
 			}, 0.16)
 			if tab.NavIconWrap then
 				tween(tab.NavIconWrap, {
-					BackgroundColor3 = selected and Color3.fromRGB(28, 28, 31) or Color3.fromRGB(18, 18, 21)
+					BackgroundColor3 = selected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(0, 0, 0)
 				}, 0.16)
 			end
-			tab.NavDot.BackgroundTransparency = selected and 0.12 or 0.58
-			tab.NavDot.BackgroundColor3 = selected and Color3.fromRGB(170, 170, 176) or Color3.fromRGB(112, 112, 118)
+			tab.NavDot.BackgroundTransparency = 0
+			tab.NavDot.BackgroundColor3 = selected and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
 			tab.NavTitle.TextColor3 = selected and Theme.Text or Theme.MutedText
 			if tab.NavMeta then
-				tab.NavMeta.TextColor3 = selected and Color3.fromRGB(184, 184, 190) or Color3.fromRGB(108, 108, 114)
+				tab.NavMeta.TextColor3 = selected and Color3.fromRGB(255, 255, 255) or Theme.MutedText
 			end
 		end
 
@@ -1790,7 +1809,7 @@ function CloudyUI:RefreshTabVisuals()
 		self.ResizeIcon.ImageColor3 = self.AccentColor
 	end
 	if self.SidebarAccent then
-		self.SidebarAccent.BackgroundColor3 = Color3.fromRGB(86, 86, 92)
+		self.SidebarAccent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	end
 end
 
@@ -1897,32 +1916,26 @@ function CloudyUI:CreateTab(name, options)
 	if not options.HideSidebarButton then
 		local nav = create("TextButton", {
 			Parent = self.NavList,
-			BackgroundColor3 = Color3.fromRGB(12, 12, 14),
+			BackgroundColor3 = Color3.fromRGB(6, 6, 7),
 			BackgroundTransparency = 0,
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
-			Size = UDim2.new(1, 0, 0, 60),
+			Size = UDim2.new(1, 0, 0, 54),
 			Text = ""
 		})
-		addCorner(nav, 14)
-		create("UIGradient", {
-			Rotation = 90,
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(17, 17, 19)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 12))
-			}),
-			Parent = nav
-		})
+		addCorner(nav, 12)
+		addStroke(nav, Theme.Stroke, 1, 0.92)
 
 		local iconWrap = create("Frame", {
 			Parent = nav,
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.new(0, 12, 0.5, 0),
-			Size = UDim2.new(0, 24, 0, 24),
-			BackgroundColor3 = Color3.fromRGB(18, 18, 21),
+			Size = UDim2.new(0, 22, 0, 22),
+			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
 			BorderSizePixel = 0
 		})
 		addCorner(iconWrap, 999)
+		addStroke(iconWrap, Theme.Stroke, 1, 0.88)
 
 		local dot = create("Frame", {
 			Parent = iconWrap,
@@ -1936,10 +1949,10 @@ function CloudyUI:CreateTab(name, options)
 		addCorner(dot, 999)
 
 		local title = makeTextLabel(nav, {
-			Position = UDim2.new(0, 44, 0, 12),
+			Position = UDim2.new(0, 42, 0, 10),
 			AnchorPoint = Vector2.new(0, 0),
 			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -52, 0, 15),
+			Size = UDim2.new(1, -50, 0, 15),
 			Text = name,
 			TextColor3 = Theme.MutedText,
 			TextSize = 13,
@@ -1947,9 +1960,9 @@ function CloudyUI:CreateTab(name, options)
 		})
 
 		local meta = makeTextLabel(nav, {
-			Position = UDim2.new(0, 44, 0, 29),
+			Position = UDim2.new(0, 42, 0, 26),
 			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -52, 0, 12),
+			Size = UDim2.new(1, -50, 0, 12),
 			Text = options.NavDescription or ("Open " .. string.lower(name)),
 			TextColor3 = Color3.fromRGB(108, 108, 114),
 			TextSize = 10,
@@ -1972,13 +1985,14 @@ function CloudyUI:CreateTab(name, options)
 			BackgroundColor3 = Theme.Input,
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
-			Size = UDim2.new(0, 92, 0, 26),
+			Size = UDim2.new(0, 96, 0, 28),
 			Text = options.QuickName or name,
 			FontFace = Font.fromEnum(Enum.Font.GothamMedium),
 			TextSize = 11,
 			TextColor3 = Theme.Text
 		})
 		addCorner(quick, 999)
+		addStroke(quick, Theme.Stroke, 1, 0.9)
 		quick.MouseButton1Click:Connect(function()
 			self:SelectTab(name)
 		end)
@@ -2071,7 +2085,14 @@ function CloudyUI:ApplyResponsiveLayout(forceCenter)
 	self.Sidebar.Size = UDim2.new(0, profile.SidebarWidth, 1, 0)
 	self.ContentShell.Size = UDim2.new(1, -(profile.SidebarWidth + 16), 1, 0)
 	self.ContentShell.Position = UDim2.new(0, profile.SidebarWidth + 16, 0, 0)
-	self.BrandCard.Size = UDim2.new(1, 0, 0, profile.IsPhone and 110 or 122)
+	self.BrandCard.Size = UDim2.new(1, 0, 0, profile.IsPhone and 72 or 78)
+	if self.SidebarTop then
+		self.SidebarTop.Size = UDim2.new(1, 0, 1, -(profile.IsPhone and 84 or 92))
+	end
+	if self.SidebarBottom then
+		self.SidebarBottom.Size = UDim2.new(1, 0, 0, profile.IsPhone and 72 or 78)
+		self.SidebarBottom.Position = UDim2.new(0, 0, 1, -(profile.IsPhone and 72 or 78))
+	end
 	self.ToggleButton.Size = profile.IsPhone and UDim2.fromOffset(48, 48) or UDim2.fromOffset(52, 52)
 	self.QuickTabs.Size = UDim2.new(0, math.min(self.ContentShell.AbsoluteSize.X, profile.IsPhone and 320 or 420), 0, 32)
 	self.ResizeHandle.Visible = not profile.IsPhone
@@ -2091,54 +2112,191 @@ function CloudyUI:ApplyResponsiveLayout(forceCenter)
 end
 
 function CloudyUI:BuildHome(tab)
-	local overview = tab:AddSection("Home", "This page opens by default and stays available from the Open Home button on the left.")
-	overview:AddLabel("Display Name: " .. LocalPlayer.DisplayName)
-	overview:AddLabel("Username: @" .. LocalPlayer.Name)
-	overview:AddLabel("User ID: " .. tostring(LocalPlayer.UserId))
-	overview:AddLabel("Executor: " .. getExecutorName())
-	overview:AddDivider("Open")
-	overview:AddButton({
-		Title = "Open Scripts",
-		Description = "Jump to the script controls.",
-		Callback = function()
+	tab:AddCustomCard(function(card, container)
+		container.AutomaticSize = Enum.AutomaticSize.None
+		container.Size = UDim2.new(1, 0, 0, 224)
+
+		local title = makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 4),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, -10, 0, 88),
+			Text = "Cloudy Developer | Script Hub",
+			FontFace = Font.fromEnum(Enum.Font.GothamBold),
+			TextSize = 34,
+			TextWrapped = true
+		})
+		addTextConstraint(title, 20, 34)
+
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 100),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, -40, 0, 44),
+			Text = "Fast script access, responsive layout, and a cleaner black-and-white shell without the old background treatment.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 13
+		})
+
+		local stats = makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 152),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 16),
+			Text = "@" .. LocalPlayer.Name .. "   /   " .. getExecutorName() .. "   /   " .. tostring(LocalPlayer.UserId),
+			TextColor3 = Theme.MutedText,
+			TextSize = 11,
+			TextWrapped = false
+		})
+		stats.TextTruncate = Enum.TextTruncate.AtEnd
+
+		local actions = create("Frame", {
+			Parent = container,
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0, 0, 1, -40),
+			Size = UDim2.new(1, 0, 0, 30)
+		})
+		local actionsLayout = addList(actions, 8, true)
+		actionsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+		local function makeHeroButton(text, inverted, callback)
+			local button = create("TextButton", {
+				Parent = actions,
+				BackgroundColor3 = inverted and Color3.fromRGB(255, 255, 255) or Theme.Input,
+				BorderSizePixel = 0,
+				AutoButtonColor = false,
+				Size = UDim2.new(0, inverted and 108 or 118, 0, 30),
+				Text = text,
+				TextColor3 = inverted and Color3.fromRGB(5, 5, 6) or Theme.Text,
+				TextSize = 12,
+				FontFace = Font.fromEnum(Enum.Font.GothamMedium)
+			})
+			addCorner(button, 999)
+			addStroke(button, Theme.Stroke, 1, inverted and 0.94 or 0.82)
+			button.MouseButton1Click:Connect(callback)
+			return button
+		end
+
+		makeHeroButton("Open Scripts", true, function()
 			self:SelectTab("Scripts")
-		end
-	})
-	overview:AddButton({
-		Title = "Open Updates",
-		Description = "See what changed in this build.",
-		Callback = function()
-			self:SelectTab("Updates")
-		end
-	})
-	overview:AddButton({
-		Title = "Open Feedback",
-		Description = "Send feedback to your API.",
-		Callback = function()
+		end)
+		makeHeroButton("Open Feedback", false, function()
 			self:SelectTab("Feedback")
-		end
-	})
-
-	local status = tab:AddSection("Status", "Simple visible content so Home is never blank.")
-	status:AddParagraph("Layout", "Home is hidden from the sidebar and bottom row. You open it from the profile card with Open Home.")
-	status:AddParagraph("Background", "The translucent back image layer has been removed so the window stays solid and readable.")
-	status:AddParagraph("Responsive", "Phone sizing still works, but Home now uses the same section cards as the other tabs so it renders reliably.")
-
-	local actions = tab:AddSection("Quick Actions", "Use these to test that the window and tab switching are working.")
-	actions:AddButton({
-		Title = "Hide Window",
-		Description = "Toggle the main panel closed. Use the floating image button to open it again.",
-		Callback = function()
+		end)
+		makeHeroButton("Hide Window", false, function()
 			self:ToggleVisible()
-		end
-	})
-	actions:AddButton({
-		Title = "Open Settings",
-		Description = "Go to the settings tab.",
-		Callback = function()
-			self:SelectTab("Settings")
-		end
-	})
+		end)
+	end, {FullWidth = true})
+
+	tab:AddCustomCard(function(card, container)
+		container.AutomaticSize = Enum.AutomaticSize.None
+		container.Size = UDim2.new(1, 0, 0, 126)
+
+		makeTextLabel(container, {
+			Text = "Responsive Layout",
+			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+			TextSize = 16
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 28),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 56),
+			Text = "Phone and PC sizing stay active, but the shell is flatter and tighter so the page reads cleaner.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 1, -16),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 14),
+			Text = "Sizing / Layout",
+			TextColor3 = Theme.Text,
+			TextSize = 11,
+			TextWrapped = false
+		})
+	end, {Column = "left"})
+
+	tab:AddCustomCard(function(card, container)
+		container.AutomaticSize = Enum.AutomaticSize.None
+		container.Size = UDim2.new(1, 0, 0, 126)
+
+		makeTextLabel(container, {
+			Text = "Clean Surface",
+			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+			TextSize = 16
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 28),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 56),
+			Text = "The older grey gradients, faded overlays, and soft background treatment are removed for a harder black-and-white look.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 1, -16),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 14),
+			Text = "Black / White",
+			TextColor3 = Theme.Text,
+			TextSize = 11,
+			TextWrapped = false
+		})
+	end, {Column = "right"})
+
+	tab:AddCustomCard(function(card, container)
+		container.AutomaticSize = Enum.AutomaticSize.None
+		container.Size = UDim2.new(1, 0, 0, 126)
+
+		makeTextLabel(container, {
+			Text = "Quick Access",
+			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+			TextSize = 16
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 28),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 56),
+			Text = "Use the left rail for built-in pages and the bottom row for gameplay tabs. Home still opens from the profile block.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 1, -16),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 14),
+			Text = "Navigation",
+			TextColor3 = Theme.Text,
+			TextSize = 11,
+			TextWrapped = false
+		})
+	end, {Column = "left"})
+
+	tab:AddCustomCard(function(card, container)
+		container.AutomaticSize = Enum.AutomaticSize.None
+		container.Size = UDim2.new(1, 0, 0, 126)
+
+		makeTextLabel(container, {
+			Text = "Feedback Ready",
+			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
+			TextSize = 16
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 0, 28),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 56),
+			Text = "The built-in feedback page still sends avatar, username, place data, and message to your endpoint.",
+			TextColor3 = Theme.MutedText,
+			TextSize = 12
+		})
+		makeTextLabel(container, {
+			Position = UDim2.new(0, 0, 1, -16),
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 14),
+			Text = "API / Live",
+			TextColor3 = Theme.Text,
+			TextSize = 11,
+			TextWrapped = false
+		})
+	end, {Column = "right"})
 end
 
 function CloudyUI:CreateDefaultWindow(config)
@@ -2182,19 +2340,10 @@ function CloudyUI:CreateDefaultWindow(config)
 	})
 	addCorner(main, 10)
 	addStroke(main, Theme.Stroke, 1, 0.94)
-	addShadow(main, 0.12)
-	create("UIGradient", {
-		Rotation = 90,
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Theme.WindowTop),
-			ColorSequenceKeypoint.new(1, Theme.WindowBottom)
-		}),
-		Parent = main
-	})
 
 	local toggleButton = create("ImageButton", {
 		Parent = screen,
-		BackgroundColor3 = Color3.fromRGB(7, 7, 9),
+		BackgroundColor3 = Color3.fromRGB(3, 3, 4),
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
 		Image = OPEN_BUTTON_IMAGE,
@@ -2246,6 +2395,7 @@ function CloudyUI:CreateDefaultWindow(config)
 		Size = UDim2.new(0, profile.SidebarWidth, 1, 0)
 	})
 	addCorner(sidebar, 0)
+	addStroke(sidebar, Theme.Stroke, 1, 0.94)
 
 	local sidebarAccent = create("Frame", {
 		Parent = sidebar,
@@ -2263,67 +2413,95 @@ function CloudyUI:CreateDefaultWindow(config)
 		Size = UDim2.new(1, -18, 1, -18),
 		Position = UDim2.new(0, 12, 0, 9)
 	})
-	addList(sidebarContent, 12, false)
+
+	local sidebarTop = create("Frame", {
+		Parent = sidebarContent,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 0, 0),
+		Size = UDim2.new(1, 0, 1, -(profile.IsPhone and 84 or 92))
+	})
+	addList(sidebarTop, 8, false)
+
+	local sidebarBottom = create("Frame", {
+		Parent = sidebarContent,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 1, -(profile.IsPhone and 72 or 78)),
+		Size = UDim2.new(1, 0, 0, profile.IsPhone and 72 or 78)
+	})
 
 	local brandCard = create("TextButton", {
-		Parent = sidebarContent,
-		BackgroundColor3 = Color3.fromRGB(9, 9, 11),
+		Parent = sidebarBottom,
+		BackgroundColor3 = Color3.fromRGB(3, 3, 4),
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
-		Size = UDim2.new(1, 0, 0, profile.IsPhone and 110 or 122),
+		Size = UDim2.new(1, 0, 1, 0),
 		Text = ""
 	})
 	addCorner(brandCard, 10)
+	addStroke(brandCard, Theme.Stroke, 1, 0.92)
 
 	local brandAvatar = create("ImageLabel", {
 		Parent = brandCard,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 12),
-		Size = profile.IsPhone and UDim2.fromOffset(40, 40) or UDim2.fromOffset(46, 46),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 10, 0.5, 0),
+		Size = profile.IsPhone and UDim2.fromOffset(34, 34) or UDim2.fromOffset(38, 38),
 		Image = getAvatarUrl(LocalPlayer.UserId)
 	})
 	addCorner(brandAvatar, 999)
+	addStroke(brandAvatar, Theme.Stroke, 1, 0.84)
 
 	local brandName = makeTextLabel(brandCard, {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, profile.IsPhone and 58 or 62),
+		AnchorPoint = Vector2.new(0, 0),
+		Position = UDim2.new(0, 58, 0, profile.IsPhone and 14 or 16),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -20, 0, 16),
+		Size = UDim2.new(1, -120, 0, 16),
 		Text = LocalPlayer.DisplayName,
 		FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
 		TextSize = 11,
-		TextScaled = true,
 		TextWrapped = false,
-		TextXAlignment = Enum.TextXAlignment.Center
+		TextXAlignment = Enum.TextXAlignment.Left
 	})
 	addTextConstraint(brandName, 8, 11)
 
 	makeTextLabel(brandCard, {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, profile.IsPhone and 76 or 80),
+		AnchorPoint = Vector2.new(0, 0),
+		Position = UDim2.new(0, 58, 0, profile.IsPhone and 32 or 34),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -20, 0, 14),
-		Text = "Guest",
+		Size = UDim2.new(1, -120, 0, 14),
+		Text = "Guest user",
 		TextColor3 = Theme.MutedText,
+		TextSize = 10,
+		TextXAlignment = Enum.TextXAlignment.Left
+	})
+
+	local homeHint = create("Frame", {
+		Parent = brandCard,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -10, 0.5, 0),
+		BackgroundColor3 = Theme.Input,
+		BorderSizePixel = 0,
+		Size = UDim2.new(0, 54, 0, 24)
+	})
+	addCorner(homeHint, 999)
+	addStroke(homeHint, Theme.Stroke, 1, 0.86)
+
+	makeTextLabel(homeHint, {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		AutomaticSize = Enum.AutomaticSize.None,
+		Size = UDim2.new(1, -8, 0, 14),
+		Text = "Home",
+		TextColor3 = Theme.Text,
 		TextSize = 10,
 		TextXAlignment = Enum.TextXAlignment.Center
 	})
 
-	makeTextLabel(brandCard, {
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -10),
-		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -20, 0, 16),
-		Text = "Open Home",
-		TextColor3 = Theme.MutedText,
-		TextSize = 10,
-		TextXAlignment = Enum.TextXAlignment.Center
-	})
-
-	local navLabel = makeTextLabel(sidebarContent, {
-		Text = "Navigation",
+	local navLabel = makeTextLabel(sidebarTop, {
+		Text = "Pages",
 		TextColor3 = Theme.MutedText,
 		TextSize = 11,
 		FontFace = Font.fromEnum(Enum.Font.GothamMedium)
@@ -2332,7 +2510,7 @@ function CloudyUI:CreateDefaultWindow(config)
 	navLabel.AutomaticSize = Enum.AutomaticSize.None
 
 	local navList = create("Frame", {
-		Parent = sidebarContent,
+		Parent = sidebarTop,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -2383,6 +2561,8 @@ function CloudyUI:CreateDefaultWindow(config)
 	selfObject.Main = main
 	selfObject.Sidebar = sidebar
 	selfObject.SidebarAccent = sidebarAccent
+	selfObject.SidebarTop = sidebarTop
+	selfObject.SidebarBottom = sidebarBottom
 	selfObject.BrandCard = brandCard
 	selfObject.NavList = navList
 	selfObject.ContentShell = contentShell

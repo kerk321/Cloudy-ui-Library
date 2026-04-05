@@ -4292,7 +4292,13 @@ local Library do
             Name = Data.Name or Data.name or "Window",
             Size = UDim2New(0, Metrics.Width, 0, Metrics.Height),
 
-            GradientTitle = Data.GradientTitle or Data.gradienttitle or false,
+            GradientTitle = type(Data.GradientTitle or Data.gradienttitle) == "table" and (Data.GradientTitle or Data.gradienttitle) or {
+                Enabled = false,
+                Start = FromRGB(255, 255, 255),
+                Middle = FromRGB(255, 255, 255),
+                End = FromRGB(255, 255, 255),
+                Speed = 1
+            },
 
             Pages = { },
             Sections = { },
@@ -4325,7 +4331,7 @@ local Library do
                 BackgroundColor3 = FromRGB(255, 255, 255)
             }) 
 
-            if Window.GradientTitle.Enabled then
+            if Window.GradientTitle and Window.GradientTitle.Enabled then
                 local UIGradient = Instances:Create("UIGradient", {
                     Parent = Items["Text"].Instance,
                     Rotation = 0,

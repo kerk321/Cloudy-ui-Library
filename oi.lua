@@ -184,7 +184,7 @@ local Library do
     Library = {
         Flags = { },
 
-        MenuKeybind = tostring(Enum.KeyCode.Z), 
+        MenuKeybind = UserInputService.TouchEnabled and nil or tostring(Enum.KeyCode.RightShift), 
 
         Tween = {
             Time = 0.25,

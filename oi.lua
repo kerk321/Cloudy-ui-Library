@@ -723,6 +723,7 @@ function Section:_createValueText(text)
 		TextSize = 11,
 		TextXAlignment = Enum.TextXAlignment.Right
 	})
+	end
 
 function Section:AddLabel(options)
 	options = normalizeOptions(options, "Text")

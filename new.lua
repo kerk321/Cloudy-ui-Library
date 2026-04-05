@@ -10,20 +10,22 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 Cloudy.Theme = {
-	Background = Color3.fromRGB(10, 11, 18),
-	Surface = Color3.fromRGB(15, 16, 26),
-	SurfaceAlt = Color3.fromRGB(18, 20, 31),
-	Section = Color3.fromRGB(17, 18, 28),
-	Control = Color3.fromRGB(23, 24, 36),
-	ControlAlt = Color3.fromRGB(30, 31, 45),
-	Stroke = Color3.fromRGB(42, 44, 60),
-	Text = Color3.fromRGB(242, 242, 247),
-	SubText = Color3.fromRGB(150, 152, 170),
+	Background = Color3.fromRGB(8, 9, 15),
+	Surface = Color3.fromRGB(11, 12, 19),
+	SurfaceAlt = Color3.fromRGB(14, 15, 23),
+	Section = Color3.fromRGB(13, 14, 22),
+	Control = Color3.fromRGB(18, 19, 29),
+	ControlAlt = Color3.fromRGB(24, 25, 36),
+	Stroke = Color3.fromRGB(31, 33, 46),
+	Text = Color3.fromRGB(235, 235, 240),
+	SubText = Color3.fromRGB(119, 121, 141),
 	Accent = Color3.fromRGB(214, 48, 169),
 	AccentDark = Color3.fromRGB(137, 26, 106),
 	Success = Color3.fromRGB(62, 198, 128),
 	Warning = Color3.fromRGB(230, 166, 73),
 	Overlay = Color3.fromRGB(5, 6, 10),
+	TabIdle = Color3.fromRGB(10, 11, 17),
+	TabActive = Color3.fromRGB(29, 30, 42),
 }
 
 local DEFAULTS = {
@@ -285,6 +287,18 @@ local function rgbToHex(color)
 	return string.format("#%02X%02X%02X", r, g, b)
 end
 
+local function resolveKeyCode(value)
+	if typeof(value) == "EnumItem" and value.EnumType == Enum.KeyCode then
+		return value
+	end
+
+	if type(value) == "string" then
+		return Enum.KeyCode[value] or Enum.KeyCode[string.upper(value)]
+	end
+
+	return nil
+end
+
 local Window = {}
 Window.__index = Window
 
@@ -329,29 +343,58 @@ end
 function Window:_applyTheme()
 	self.Window.BackgroundColor3 = self.Theme.Surface
 	self.Header.BackgroundColor3 = self.Theme.SurfaceAlt
-	self.TabBar.BackgroundColor3 = self.Theme.Surface
+	self.HeaderFill.BackgroundColor3 = self.Theme.SurfaceAlt
+	self.TabBar.BackgroundColor3 = self.Theme.SurfaceAlt
+	self.TabBarFrame.BackgroundColor3 = self.Theme.SurfaceAlt
 	self.TabUnderline.BackgroundColor3 = self.Theme.Accent
 	self.BodyBackground.BackgroundColor3 = self.Theme.Background
 	self.OpenButton.BackgroundColor3 = Color3.fromRGB(7, 8, 12)
 	self.OpenButtonText.TextColor3 = self.Theme.Text
-	self.TitleLabel.TextColor3 = self.Theme.Text
-	self.SubtitleLabel.TextColor3 = self.Theme.SubText
+	self.TitleLabel.TextColor3 = self.Theme.Accent
+	self.TitleDot.BackgroundColor3 = self.Theme.SubText
+	self.SubtitleLabel.TextColor3 = self.Theme.Text
 	self.BadgeLabel.TextColor3 = self.Theme.Accent
-	self.BadgeLabel.BackgroundColor3 = Color3.fromRGB(24, 16, 25)
+	self.BadgeLabel.BackgroundColor3 = Color3.fromRGB(24, 15, 24)
+	self.UsernameLabel.TextColor3 = self.Theme.SubText
+	self.Footer.BackgroundColor3 = self.Theme.SurfaceAlt
+	self.FooterPresenceDot.BackgroundColor3 = self.Theme.Success
+	self.FooterPresenceLabel.TextColor3 = self.Theme.SubText
+	self.FooterUrlPrefix.TextColor3 = self.Theme.SubText
+	self.FooterUrlText.TextColor3 = self.Theme.Text
+	self.FooterUpdatedPrefix.TextColor3 = self.Theme.SubText
+	self.FooterUpdatedDate.TextColor3 = self.Theme.Accent
+	self.WindowShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+end
+
+function Window:_layoutHeader()
+	local titleWidth = self.TitleLabel.TextBounds.X
+	local subtitleWidth = self.SubtitleLabel.TextBounds.X
+	local badgeWidth = math.max(48, self.BadgeLabel.TextBounds.X + 18)
+
+	self.TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+	self.TitleDot.Position = UDim2.new(0, titleWidth + 10, 0, 10)
+	self.SubtitleLabel.Position = UDim2.new(0, titleWidth + 20, 0, 3)
+	self.BadgeLabel.Size = UDim2.fromOffset(badgeWidth, 18)
+	self.BadgeLabel.Position = UDim2.new(0, titleWidth + subtitleWidth + 34, 0, 2)
 end
 
 function Window:_updateTabStyles()
 	for _, tab in ipairs(self.Tabs) do
 		local selected = self.ActiveTab == tab
+		tab.Button.BackgroundTransparency = 1
 		tab.ButtonText.TextColor3 = selected and self.Theme.Text or self.Theme.SubText
 		tab.ButtonIndicator.BackgroundColor3 = tab.AccentColor or self.Theme.Accent
 		tab.ButtonIndicator.Visible = selected
+		tab.ButtonIndicator.BackgroundTransparency = selected and 0 or 1
+		tab.ButtonStroke.Transparency = 1
 		tab.Page.Visible = selected
-		tab.AccentDot.BackgroundColor3 = tab.AccentColor or self.Theme.Accent
+		tab.AccentDot.Visible = false
 	end
 
 	if self.ActiveTab then
 		self.TabUnderline.BackgroundColor3 = self.ActiveTab.AccentColor or self.Theme.Accent
+		self.TabUnderline.Size = UDim2.fromOffset(self.ActiveTab.Button.AbsoluteSize.X - 16, 2)
+		self.TabUnderline.Position = UDim2.new(0, self.ActiveTab.Button.AbsolutePosition.X - self.TabBarFrame.AbsolutePosition.X + 8 + self.TabBarFrame.Position.X.Offset, 1, -2)
 	end
 end
 
@@ -362,25 +405,33 @@ function Window:_updateResponsiveLayout()
 	self.Window.Size = UDim2.fromOffset(self.Profile.WindowWidth, self.Profile.WindowHeight)
 	self.Window.Position = UDim2.new(0.5, 0, 0.5, 0)
 	self.Window.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.WindowShadow.Size = UDim2.new(0, self.Profile.WindowWidth + 90, 0, self.Profile.WindowHeight + 100)
+	self.WindowShadow.Position = self.Window.Position
 
 	self.OpenButton.Size = UDim2.fromOffset(self.Profile.OpenButtonWidth, self.Profile.OpenButtonHeight)
 	self.OpenButton.Position = UDim2.new(1, -(self.Profile.Padding + 16), 0, self.Profile.Padding + GuiService:GetGuiInset().Y)
 
 	self.Header.Size = UDim2.new(1, 0, 0, self.Profile.HeaderHeight)
 	self.TabBar.Size = UDim2.new(1, 0, 0, self.Profile.TabHeight)
+	self.Footer.Size = UDim2.new(1, 0, 0, 24)
+	self.Footer.Position = UDim2.new(0, 0, 1, -24)
 	self.BodyBackground.Position = UDim2.new(0, 0, 0, self.Profile.HeaderHeight + self.Profile.TabHeight)
-	self.BodyBackground.Size = UDim2.new(1, 0, 1, -(self.Profile.HeaderHeight + self.Profile.TabHeight))
+	self.BodyBackground.Size = UDim2.new(1, 0, 1, -(self.Profile.HeaderHeight + self.Profile.TabHeight + 24))
 
 	self.TitleLabel.TextSize = self.Profile.TitleText
-	self.SubtitleLabel.TextSize = 12
+	self.SubtitleLabel.TextSize = math.max(11, self.Profile.TitleText - 8)
 	self.BadgeLabel.TextSize = 11
 	self.OpenButtonText.TextSize = 14
+	self.TabBarFrame.Size = UDim2.new(1, -(self.Profile.Padding * 2), 1, -10)
+	self.TabBarFrame.Position = UDim2.new(0, self.Profile.Padding, 0, 5)
+	self.UsernameLabel.Position = UDim2.new(1, -self.Profile.Padding, 0, 12)
+	self:_layoutHeader()
 
 	applyCorner(self.Window, self.Profile.Corner)
 	applyCorner(self.OpenButton, 14)
 
 	for _, tab in ipairs(self.Tabs) do
-		tab.Button.Size = UDim2.new(0, 0, 1, 0)
+		tab.Button.Size = UDim2.new(0, 0, 0, math.max(30, self.Profile.TabHeight - 16))
 		tab.Button.AutomaticSize = Enum.AutomaticSize.X
 		tab.ButtonText.TextSize = self.Profile.ControlText
 		tab:RefreshLayout()
@@ -404,14 +455,29 @@ end
 
 function Window:SetTitle(title)
 	self.TitleLabel.Text = title
+	self:_layoutHeader()
 end
 
 function Window:SetSubtitle(subtitle)
 	self.SubtitleLabel.Text = subtitle
+	self:_layoutHeader()
 end
 
 function Window:SetBadge(text)
 	self.BadgeLabel.Text = text
+	self:_layoutHeader()
+end
+
+function Window:SetPresenceCount(value)
+	self.FooterPresenceLabel.Text = tostring(value) .. " online"
+end
+
+function Window:SetFooterUrl(value)
+	self.FooterUrlText.Text = value
+end
+
+function Window:SetUpdatedText(value)
+	self.FooterUpdatedDate.Text = value
 end
 
 function Window:SetAccentColor(color)
@@ -425,10 +491,17 @@ function Window:SetOpen(isOpen)
 
 	if isOpen then
 		self.Window.Visible = true
+		self.WindowShadow.Visible = true
 		self.Window.GroupTransparency = 1
+		self.WindowShadow.ImageTransparency = 1
 		self.Window.Position = UDim2.new(0.5, 0, 0.53, 0)
+		self.WindowShadow.Position = self.Window.Position
 		tween(self.Window, 0.22, {
 			GroupTransparency = 0,
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+		})
+		tween(self.WindowShadow, 0.22, {
+			ImageTransparency = 0.42,
 			Position = UDim2.new(0.5, 0, 0.5, 0),
 		})
 		self.OpenButtonText.Text = "Close"
@@ -438,9 +511,14 @@ function Window:SetOpen(isOpen)
 			GroupTransparency = 1,
 			Position = UDim2.new(0.5, 0, 0.53, 0),
 		}, Enum.EasingStyle.Quad)
+		tween(self.WindowShadow, 0.18, {
+			ImageTransparency = 1,
+			Position = UDim2.new(0.5, 0, 0.53, 0),
+		}, Enum.EasingStyle.Quad)
 		animation.Completed:Once(function()
 			if not self.IsOpen then
 				self.Window.Visible = false
+				self.WindowShadow.Visible = false
 			end
 		end)
 	end
@@ -724,33 +802,43 @@ function Section:AddToggle(options)
 		Key = nil,
 	}, options or {})
 
-	local row, _, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 54 or 40)
+	local row, titleLabel, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 52 or 36)
+	titleLabel.Position = UDim2.new(0, 28, 0, 0)
+	titleLabel.Size = UDim2.new(1, -116, 0, 18)
+	if subtitleLabel then
+		subtitleLabel.Position = UDim2.new(0, 28, 0, 18)
+		subtitleLabel.Size = UDim2.new(1, -116, 0, 16)
+	end
 	local toggleBox = create("TextButton", {
 		Parent = row,
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, 0, 0.5, 0),
-		Size = UDim2.fromOffset(46, 24),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 0, 0.5, 0),
+		Size = UDim2.fromOffset(16, 16),
 		BackgroundColor3 = self.Window.Theme.ControlAlt,
 		AutoButtonColor = false,
 		Text = "",
 	})
-	applyCorner(toggleBox, 999)
+	applyCorner(toggleBox, 4)
+	local toggleStroke = applyStroke(toggleBox, self.Window.Theme.Stroke, 1, 0.15)
 
-	local knob = create("Frame", {
+	local fill = create("Frame", {
 		Parent = toggleBox,
-		BackgroundColor3 = Color3.fromRGB(245, 245, 247),
-		Position = UDim2.new(0, 2, 0.5, 0),
-		AnchorPoint = Vector2.new(0, 0.5),
-		Size = UDim2.fromOffset(20, 20),
+		BackgroundColor3 = self.Window.Theme.Accent,
+		Position = UDim2.new(0, 0, 0, 0),
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
 	})
-	applyCorner(knob, 999)
+	applyCorner(fill, 4)
+
+	local check = createTextLabel(toggleBox, UDim2.new(1, 0, 1, 0), UDim2.new(), "", Enum.Font.GothamBold, 11, Color3.fromRGB(255, 255, 255), Enum.TextXAlignment.Center)
+	check.TextYAlignment = Enum.TextYAlignment.Center
 
 	local keyChip
 	if config.Key then
 		keyChip = create("Frame", {
 			Parent = row,
 			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -58, 0.5, 0),
+			Position = UDim2.new(1, 0, 0.5, 0),
 			BackgroundColor3 = self.Window.Theme.ControlAlt,
 			Size = UDim2.fromOffset(24, 18),
 		})
@@ -759,17 +847,21 @@ function Section:AddToggle(options)
 	end
 
 	local state = config.Default
+	local boundKey = resolveKeyCode(config.Key)
 
 	local function render()
-		tween(toggleBox, 0.14, {
+		tween(toggleBox, 0.12, {
 			BackgroundColor3 = state and self.Window.Theme.Accent or self.Window.Theme.ControlAlt,
 		}, Enum.EasingStyle.Quad)
-		tween(knob, 0.14, {
-			Position = state and UDim2.new(1, -22, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+		tween(fill, 0.12, {
+			BackgroundTransparency = state and 0 or 1,
 		}, Enum.EasingStyle.Quad)
+		toggleStroke.Color = state and self.Window.Theme.Accent or self.Window.Theme.Stroke
+		check.Text = state and "" or ""
 		if subtitleLabel then
 			subtitleLabel.TextColor3 = state and self.Window.Theme.Text or self.Window.Theme.SubText
 		end
+		titleLabel.TextColor3 = self.Window.Theme.Text
 	end
 
 	local api = {}
@@ -795,6 +887,18 @@ function Section:AddToggle(options)
 			api:Set(not state)
 		end
 	end)
+
+	if boundKey then
+		UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then
+				return
+			end
+
+			if input.KeyCode == boundKey then
+				api:Set(not state)
+			end
+		end)
+	end
 
 	render()
 	return api
@@ -1463,12 +1567,13 @@ function Window:CreateTab(options)
 	tab.Button = create("TextButton", {
 		Parent = self.TabList,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 0, 1, 0),
+		Size = UDim2.new(0, 0, 0, math.max(30, self.Profile.TabHeight - 16)),
 		AutomaticSize = Enum.AutomaticSize.X,
 		Text = "",
 		AutoButtonColor = false,
 	})
-	applyPadding(tab.Button, 0, 18, 0, 0)
+	tab.ButtonStroke = applyStroke(tab.Button, self.Theme.Stroke, 1, 0.72)
+	applyPadding(tab.Button, 0, 12, 0, 0)
 
 	tab.ButtonText = createTextLabel(tab.Button, UDim2.new(0, 0, 1, 0), UDim2.new(), config.Title, Enum.Font.GothamSemibold, self.Profile.ControlText, self.Theme.SubText)
 	tab.ButtonText.AutomaticSize = Enum.AutomaticSize.X
@@ -1477,8 +1582,8 @@ function Window:CreateTab(options)
 	tab.AccentDot = create("Frame", {
 		Parent = tab.Button,
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.fromOffset(6, 6),
+		Position = UDim2.new(0, -6, 0.5, 0),
+		Size = UDim2.fromOffset(4, 14),
 		BackgroundColor3 = config.Accent,
 	})
 	applyCorner(tab.AccentDot, 999)
@@ -1487,8 +1592,8 @@ function Window:CreateTab(options)
 		Parent = tab.Button,
 		BackgroundColor3 = config.Accent,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 1, -2),
-		Size = UDim2.new(1, 0, 0, 2),
+		Position = UDim2.new(0, 8, 1, -2),
+		Size = UDim2.new(1, -16, 0, 2),
 		Visible = false,
 	})
 	applyCorner(tab.ButtonIndicator, 999)
@@ -1588,6 +1693,18 @@ function Cloudy.new(options)
 		Position = UDim2.new(0.5, 0, 0.5, 0),
 		GroupTransparency = 0,
 	})
+	self.WindowShadow = create("ImageLabel", {
+		Parent = self.Gui,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = self.Window.Position,
+		Size = UDim2.new(0, self.Profile.WindowWidth + 90, 0, self.Profile.WindowHeight + 100),
+		Image = "rbxassetid://1316045217",
+		ScaleType = Enum.ScaleType.Slice,
+		SliceCenter = Rect.new(10, 10, 118, 118),
+		ImageTransparency = 0.42,
+		ZIndex = 0,
+	})
 	applyCorner(self.Window, self.Profile.Corner)
 	applyStroke(self.Window, self.Theme.Stroke, 1, 0.12)
 
@@ -1599,23 +1716,31 @@ function Cloudy.new(options)
 	})
 	applyCorner(self.Header, self.Profile.Corner)
 
-	local headerFill = create("Frame", {
+	self.HeaderFill = create("Frame", {
 		Parent = self.Header,
 		BackgroundColor3 = self.Theme.SurfaceAlt,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0.5, 0),
 		Size = UDim2.new(1, 0, 0.5, 0),
 	})
-	headerFill.Name = "HeaderFill"
+	self.HeaderFill.Name = "HeaderFill"
 
 	applyPadding(self.Header, self.Profile.Padding, self.Profile.Padding, 12, 10)
 	self.TitleLabel = createTextLabel(self.Header, UDim2.new(0.5, 0, 0, 20), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.GothamBold, self.Profile.TitleText, self.Theme.Text)
-	self.SubtitleLabel = createTextLabel(self.Header, UDim2.new(0.5, 0, 0, 16), UDim2.new(0, 0, 0, 22), config.Subtitle, Enum.Font.Gotham, 12, self.Theme.SubText)
+	self.TitleLabel.AutomaticSize = Enum.AutomaticSize.X
+	self.TitleDot = create("Frame", {
+		Parent = self.Header,
+		BackgroundColor3 = self.Theme.SubText,
+		Position = UDim2.new(0, 58, 0, 12),
+		Size = UDim2.fromOffset(4, 4),
+	})
+	applyCorner(self.TitleDot, 999)
+	self.SubtitleLabel = createTextLabel(self.Header, UDim2.new(0, 0, 0, 16), UDim2.new(0, 68, 0, 5), config.Subtitle, Enum.Font.GothamMedium, 12, self.Theme.SubText)
+	self.SubtitleLabel.AutomaticSize = Enum.AutomaticSize.X
 
 	self.BadgeLabel = create("TextLabel", {
 		Parent = self.Header,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 2),
+		Position = UDim2.new(0, 0, 0, 2),
 		Size = UDim2.fromOffset(56, 18),
 		BackgroundColor3 = Color3.fromRGB(24, 16, 25),
 		Text = config.Badge,
@@ -1624,18 +1749,30 @@ function Cloudy.new(options)
 		TextColor3 = self.Theme.Accent,
 	})
 	applyCorner(self.BadgeLabel, 999)
+	applyPadding(self.BadgeLabel, 8, 8, 0, 0)
+
+	self.UsernameLabel = createTextLabel(self.Header, UDim2.new(0, 180, 0, 16), UDim2.new(1, -self.Profile.Padding, 0, 12), LocalPlayer and LocalPlayer.Name or "Player", Enum.Font.GothamMedium, 12, self.Theme.SubText, Enum.TextXAlignment.Right)
+	self.UsernameLabel.AnchorPoint = Vector2.new(1, 0)
 
 	self.TabBar = create("Frame", {
 		Parent = self.Window,
-		BackgroundColor3 = self.Theme.Surface,
+		BackgroundColor3 = self.Theme.SurfaceAlt,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0, self.Profile.HeaderHeight),
 		Size = UDim2.new(1, 0, 0, self.Profile.TabHeight),
 	})
-	applyPadding(self.TabBar, self.Profile.Padding, self.Profile.Padding, 0, 0)
+
+	self.TabBarFrame = create("Frame", {
+		Parent = self.TabBar,
+		BackgroundColor3 = self.Theme.SurfaceAlt,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, self.Profile.Padding, 0, 5),
+		Size = UDim2.new(1, -(self.Profile.Padding * 2), 1, -10),
+	})
+	applyPadding(self.TabBarFrame, 4, 4, 6, 6)
 
 	self.TabScroll = create("ScrollingFrame", {
-		Parent = self.TabBar,
+		Parent = self.TabBarFrame,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 0,
@@ -1657,7 +1794,7 @@ function Cloudy.new(options)
 		HorizontalAlignment = Enum.HorizontalAlignment.Left,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 18),
+		Padding = UDim.new(0, 10),
 	})
 
 	self.TabUnderline = create("Frame", {
@@ -1675,9 +1812,33 @@ function Cloudy.new(options)
 		BackgroundColor3 = self.Theme.Background,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0, self.Profile.HeaderHeight + self.Profile.TabHeight),
-		Size = UDim2.new(1, 0, 1, -(self.Profile.HeaderHeight + self.Profile.TabHeight)),
+		Size = UDim2.new(1, 0, 1, -(self.Profile.HeaderHeight + self.Profile.TabHeight + 24)),
 		ClipsDescendants = true,
 	})
+
+	self.Footer = create("Frame", {
+		Parent = self.Window,
+		BackgroundColor3 = self.Theme.SurfaceAlt,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 1, -24),
+		Size = UDim2.new(1, 0, 0, 24),
+	})
+	applyPadding(self.Footer, 10, 10, 0, 0)
+	self.FooterPresenceDot = create("Frame", {
+		Parent = self.Footer,
+		BackgroundColor3 = self.Theme.Success,
+		Position = UDim2.new(0, 0, 0.5, 0),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Size = UDim2.fromOffset(6, 6),
+	})
+	applyCorner(self.FooterPresenceDot, 999)
+	self.FooterPresenceLabel = createTextLabel(self.Footer, UDim2.new(0, 120, 1, 0), UDim2.new(0, 12, 0, 0), "2075 online", Enum.Font.GothamMedium, 11, self.Theme.SubText)
+	self.FooterUrlPrefix = createTextLabel(self.Footer, UDim2.new(0, 28, 1, 0), UDim2.new(0.5, -58, 0, 0), "Url:", Enum.Font.GothamMedium, 11, self.Theme.SubText, Enum.TextXAlignment.Right)
+	self.FooterUrlPrefix.AnchorPoint = Vector2.new(0, 0)
+	self.FooterUrlText = createTextLabel(self.Footer, UDim2.new(0, 110, 1, 0), UDim2.new(0.5, -24, 0, 0), ".gg/getcloudy", Enum.Font.GothamMedium, 11, self.Theme.Text, Enum.TextXAlignment.Left)
+	self.FooterUpdatedPrefix = createTextLabel(self.Footer, UDim2.new(0, 58, 1, 0), UDim2.new(1, -130, 0, 0), "Updated:", Enum.Font.GothamMedium, 11, self.Theme.SubText, Enum.TextXAlignment.Right)
+	self.FooterUpdatedPrefix.AnchorPoint = Vector2.new(0, 0)
+	self.FooterUpdatedDate = createTextLabel(self.Footer, UDim2.new(0, 90, 1, 0), UDim2.new(1, -68, 0, 0), "Apr 5 2026", Enum.Font.GothamSemibold, 11, self.Theme.Accent, Enum.TextXAlignment.Left)
 
 	self.PageHost = create("Frame", {
 		Parent = self.BodyBackground,
@@ -1700,6 +1861,12 @@ function Cloudy.new(options)
 	end)
 
 	self:_applyTheme()
+	self:SetTitle(config.Title)
+	self:SetSubtitle(config.Subtitle)
+	self:SetBadge(config.Badge)
+	self:SetPresenceCount(2075)
+	self:SetFooterUrl(".gg/getcloudy")
+	self:SetUpdatedText("Apr 5 2026")
 	self:_enableDragging()
 
 	local function refreshOnViewportChange()

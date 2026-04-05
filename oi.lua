@@ -47,7 +47,8 @@ end
 local function create(className, props)
 	local instance = Instance.new(className)
 	for key, value in pairs(props or {}) do
-		if key ~= "Children" and key ~= "Corner" and key ~= "Stroke" and key ~= "Padding" and key ~= "Gradient" then
+		local isSpecialPadding = key == "Padding" and typeof(value) == "table"
+		if key ~= "Children" and key ~= "Corner" and key ~= "Stroke" and key ~= "Gradient" and not isSpecialPadding then
 			instance[key] = value
 		end
 	end
@@ -67,7 +68,7 @@ local function create(className, props)
 			stroke.Parent = instance
 		end
 
-		if props.Padding then
+		if typeof(props.Padding) == "table" then
 			local padding = Instance.new("UIPadding")
 			for key, value in pairs(props.Padding) do
 				padding[key] = value

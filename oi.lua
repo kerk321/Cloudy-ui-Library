@@ -4153,7 +4153,7 @@ local Library do
                     BackgroundColor3 = FromRGB(255, 255, 255)
                 })  Items["Title"]:AddToTheme({TextColor3 = "Text"})
 
-                Items["CloseButton"] = Instances:Create("ImageButton", {
+                Items["CloseButton"] = Instances:Create("TextButton", {
                     Parent = Items["Topbar"].Instance,
                     Name = "\0",
                     ScaleType = Enum.ScaleType.Fit,
@@ -4977,7 +4977,7 @@ local Library do
                     BackgroundColor3 = FromRGB(255, 255, 255)
                 })  Items["Title"]:AddToTheme({TextColor3 = "Text"})
 
-                Items["CloseButton"] = Instances:Create("ImageButton", {
+                Items["CloseButton"] = Instances:Create("TextButton", {
                     Parent = Items["Topbar"].Instance,
                     Name = "\0",
                     ScaleType = Enum.ScaleType.Fit,
@@ -6100,7 +6100,7 @@ local Library do
                     PaddingRight = UDimNew(0, 0)
                 })
 
-                Items["CloseButton"] = Instances:Create("ImageButton", {
+                Items["CloseButton"] = Instances:Create("TextButton", {
                     Parent = Items["Topbar"].Instance,
                     Name = "\0",
                     BorderColor3 = FromRGB(0, 0, 0),

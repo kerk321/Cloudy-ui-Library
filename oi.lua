@@ -4314,6 +4314,30 @@ local Library do
             Parent = self.Holder,
             Draggable = true
         }) do 
+            Items["OpenButton"] = Instances:Create("TextButton", {
+                Parent = self.Holder.Instance,
+                AnchorPoint = Vector2New(1, 1),
+                AutoButtonColor = false,
+                Name = "\0",
+                Position = Metrics.DeviceType == "Phone" and UDim2New(1, -12, 1, -12) or UDim2New(1, -18, 1, -18),
+                Size = Metrics.DeviceType == "Phone" and UDim2New(0, 44, 0, 44) or UDim2New(0, 38, 0, 38),
+                BorderColor3 = FromRGB(0, 0, 0),
+                BorderSizePixel = 2,
+                BackgroundColor3 = FromRGB(13, 13, 13),
+                Text = "UI",
+                TextColor3 = FromRGB(180, 180, 180),
+                FontFace = Library.Font,
+                TextSize = Metrics.DeviceType == "Phone" and 14 or 12,
+                Visible = true
+            })  Items["OpenButton"]:AddToTheme({BackgroundColor3 = "Inline", BorderColor3 = "Outline", TextColor3 = "Text"})
+
+            Instances:Create("UIStroke", {
+                Parent = Items["OpenButton"].Instance,
+                Color = FromRGB(68, 68, 68),
+                LineJoinMode = Enum.LineJoinMode.Miter,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            }):AddToTheme({Color = "Border"})
+
             Items["Text"] = Instances:Create("TextLabel", {
                 Parent = Items["Inline"].Instance,
                 FontFace = Library.Font,
@@ -4424,17 +4448,30 @@ local Library do
             Window.IsOpen = Bool
 
             Items["Outline"].Instance.Visible = Bool
+            if Bool then
+                Items["OpenButton"]:ChangeItemTheme({TextColor3 = "Accent"})
+                Items["OpenButton"]:Tween(nil, {TextColor3 = Library.Theme.Accent})
+            else
+                Items["OpenButton"]:ChangeItemTheme({TextColor3 = "Text"})
+                Items["OpenButton"]:Tween(nil, {TextColor3 = Library.Theme.Text})
+            end
         end
+
+        Items["OpenButton"]:Connect("Activated", function()
+            Window:SetOpen(not Window.IsOpen)
+        end)
 
         Library:Connect(UserInputService.InputBegan, function(Input, GameProcessed)
             if GameProcessed then 
                 return
             end
 
-            if tostring(Input.KeyCode) == Library.MenuKeybind or tostring(Input.UserInputType) == Library.MenuKeybind then
+            if Library.MenuKeybind and (tostring(Input.KeyCode) == Library.MenuKeybind or tostring(Input.UserInputType) == Library.MenuKeybind) then
                 Window:SetOpen(not Window.IsOpen)
             end
         end)
+
+        Window:SetOpen(true)
 
         Window.Items = Items
         return setmetatable(Window, self)

@@ -82,18 +82,44 @@ local Library do
         local DeviceType = GetDeviceType()
 
         if DeviceType == "Phone" then
-            local Width = MathClamp(ViewportSize.X - 20, 290, 340)
+            local Width = MathClamp(ViewportSize.X - 18, 340, 410)
             local Height = MathClamp(ViewportSize.Y - 105, 330, 430)
             return UDim2New(0, Width, 0, Height)
         elseif DeviceType == "Tablet" then
-            local Width = MathClamp(MathFloor(ViewportSize.X * 0.5), 400, 520)
+            local Width = MathClamp(MathFloor(ViewportSize.X * 0.6), 500, 680)
             local Height = MathClamp(MathFloor(ViewportSize.Y * 0.6), 380, 520)
             return UDim2New(0, Width, 0, Height)
         end
 
-        local Width = MathClamp(MathFloor(ViewportSize.X * 0.34), 430, 560)
+        local Width = MathClamp(MathFloor(ViewportSize.X * 0.44), 580, 780)
         local Height = MathClamp(MathFloor(ViewportSize.Y * 0.58), 390, 520)
         return UDim2New(0, Width, 0, Height)
+    end
+
+    local function ResolveImage(Image)
+        if Image == nil then
+            return ""
+        end
+
+        if type(Image) == "number" then
+            return "rbxassetid://" .. tostring(Image)
+        end
+
+        local ImageString = tostring(Image)
+
+        if ImageString == "" then
+            return ""
+        end
+
+        if StringFind(ImageString, "://") or StringFind(ImageString, "^rbxasset") then
+            return ImageString
+        end
+
+        if StringFind(ImageString, "^%d+$") then
+            return "rbxassetid://" .. ImageString
+        end
+
+        return ImageString
     end
 
     local IsMobile = UserInputService.TouchEnabled or false
@@ -1248,7 +1274,7 @@ local Library do
                     BorderColor3 = FromRGB(0, 0, 0),
                     AnchorPoint = Vector2New(1, 0.5),
                     Position = UDim2New(1, 0, 0.5, 0),
-                    Size = UDim2New(0, 42, 0, 24),
+                    Size = UDim2New(0, 22, 0, 22),
                     ZIndex = 2,
                     BorderSizePixel = 0,
                     BackgroundTransparency = 1
@@ -1282,7 +1308,7 @@ local Library do
                 Instances:Create("UICorner", {
                     Parent = Items["Inline"].Instance,
                     Name = "\0",
-                    CornerRadius = UDimNew(1, 0)
+                    CornerRadius = UDimNew(0, 6)
                 })
 
                 Instances:Create("UIGradient", {
@@ -1298,18 +1324,19 @@ local Library do
                     Parent = Items["Inline"].Instance,
                     Name = "\0",
                     BorderColor3 = FromRGB(0, 0, 0),
-                    Size = UDim2New(0, 16, 0, 16),
-                    AnchorPoint = Vector2New(0, 0.5),
-                    Position = UDim2New(0, 3, 0.5, 0),
+                    Size = UDim2New(1, -6, 1, -6),
+                    AnchorPoint = Vector2New(0, 0),
+                    Position = UDim2New(0, 3, 0, 3),
                     ZIndex = 2,
                     BorderSizePixel = 0,
-                    BackgroundColor3 = FromRGB(255, 255, 255)
+                    BackgroundColor3 = FromRGB(255, 255, 255),
+                    BackgroundTransparency = 1
                 })
 
                 Instances:Create("UICorner", {
                     Parent = Items["Dot"].Instance,
                     Name = "\0",
-                    CornerRadius = UDimNew(1, 0)
+                    CornerRadius = UDimNew(0, 4)
                 })
 
                 Items["SubElements"] = Instances:Create("Frame", {
@@ -1318,7 +1345,7 @@ local Library do
                     BorderColor3 = FromRGB(0, 0, 0),
                     AnchorPoint = Vector2New(1, 0),
                     BackgroundTransparency = 1,
-                    Position = UDim2New(1, -24, 0, 0),
+                    Position = UDim2New(1, -54, 0, 0),
                     Size = UDim2New(0, 0, 1, 0),
                     BorderSizePixel = 0,
                     AutomaticSize = Enum.AutomaticSize.X,
@@ -1348,13 +1375,13 @@ local Library do
                     Items["Inline"]:ChangeItemTheme({BackgroundColor3 = "Accent"})
 
                     Items["Inline"]:Tween(nil, {BackgroundColor3 = Library.Theme.Accent})
-                    Items["Dot"]:Tween(nil, {Position = UDim2New(1, -19, 0.5, 0), BackgroundColor3 = FromRGB(255, 255, 255)})
+                    Items["Dot"]:Tween(nil, {BackgroundTransparency = 0, BackgroundColor3 = FromRGB(255, 255, 255)})
                     Items["Text"]:Tween(nil, {TextTransparency = 0.05})
                 else
                     Items["Inline"]:ChangeItemTheme({BackgroundColor3 = "Element"})
 
                     Items["Inline"]:Tween(nil, {BackgroundColor3 = Library.Theme.Element})
-                    Items["Dot"]:Tween(nil, {Position = UDim2New(0, 3, 0.5, 0), BackgroundColor3 = Library.Theme.Text})
+                    Items["Dot"]:Tween(nil, {BackgroundTransparency = 1, BackgroundColor3 = Library.Theme.Text})
                     Items["Text"]:Tween(nil, {TextTransparency = 0.5})
                 end
 
@@ -1990,11 +2017,11 @@ local Library do
                     AnchorPoint = Vector2New(1, 0.5),
                     BorderSizePixel = 0,
                     Position = UDim2New(1, -25, 0, 0),
-                    Size = UDim2New(0, 20, 0, 20),
+                    Size = UDim2New(0, 22, 0, 22),
                     ZIndex = 2,
                     TextSize = 14,
-                    BackgroundColor3 = FromRGB(255, 125, 32)
-                })
+                    BackgroundColor3 = FromRGB(24, 28, 34)
+                })  Items["ColorpickerButton"]:AddToTheme({BackgroundColor3 = "Element"})
 
                 local CalculateCount = function(Index)
                     local MaxButtonsAdded = 5
@@ -2002,11 +2029,11 @@ local Library do
                     local Column = Index % MaxButtonsAdded
                 
                     local ButtonSize = Items["ColorpickerButton"].Instance.AbsoluteSize
-                    local Spacing = 4
+                    local Spacing = 6
                 
                     local XPosition = (ButtonSize.X + Spacing) * Column - Spacing - ButtonSize.X
                 
-                    Items["ColorpickerButton"].Instance.Position = UDim2New(1, Data.IsToggle and XPosition - 24 or -XPosition, 0.5, 0)
+                    Items["ColorpickerButton"].Instance.Position = UDim2New(1, Data.IsToggle and (-54 - XPosition) or -XPosition, 0.5, 0)
                 end
 
                 CalculateCount(Data.Count)
@@ -2014,8 +2041,16 @@ local Library do
                 Instances:Create("UICorner", {
                     Parent = Items["ColorpickerButton"].Instance,
                     Name = "\0",
-                    CornerRadius = UDimNew(0, 4)
+                    CornerRadius = UDimNew(0, 6)
                 })
+
+                Instances:Create("UIStroke", {
+                    Parent = Items["ColorpickerButton"].Instance,
+                    Name = "\0",
+                    Color = FromRGB(32, 36, 42),
+                    Transparency = 0.15,
+                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                }):AddToTheme({Color = "Border"})
 
                 Items["Inline"] = Instances:Create("Frame", {
                     Parent = Items["ColorpickerButton"].Instance,
@@ -2834,7 +2869,6 @@ local Library do
                     Color = Colorpicker.HexValue
                 }
 
-                Items["ColorpickerButton"]:Tween(nil, {BackgroundColor3 = Color})
                 Items["Inline"]:Tween(nil, {BackgroundColor3 = Color})
                 Items["Palette"]:Tween(nil, {BackgroundColor3 = FromHSV(Hue, 1, 1)})
 
@@ -5811,16 +5845,22 @@ local Library do
                     end)
                 end
 
-                Items["Pages"] = Instances:Create("Frame", {
+                Items["Pages"] = Instances:Create("ScrollingFrame", {
                     Parent = Items["MainFrame"].Instance,
                     Name = "\0",
+                    Active = true,
+                    AutomaticCanvasSize = Enum.AutomaticSize.X,
                     BorderColor3 = FromRGB(0, 0, 0),
-                    AnchorPoint = Vector2New(0.5, 0),
+                    AnchorPoint = Vector2New(0, 0),
                     BorderSizePixel = 0,
-                    Position = UDim2New(0.5, 0, 0, 40),
-                    Size = UDim2New(0, 0, 0, 32),
+                    BackgroundTransparency = 0,
+                    CanvasSize = UDim2New(0, 0, 0, 0),
+                    Position = UDim2New(0, 10, 0, 40),
+                    ScrollBarThickness = 0,
+                    ScrollingDirection = Enum.ScrollingDirection.X,
+                    Size = UDim2New(1, -20, 0, 32),
                     ZIndex = 2,
-                    AutomaticSize = Enum.AutomaticSize.X,
+                    ClipsDescendants = true,
                     BackgroundColor3 = FromRGB(34, 39, 45)
                 })  Items["Pages"]:AddToTheme({BackgroundColor3 = "Element"})
 
@@ -6363,7 +6403,7 @@ local Library do
                 Window = self,
 
                 Name = Data.Name or Data.name or "combat",
-                Icon = Data.Icon or Data.icon or "111178525804834",
+                Icon = Data.Icon or Data.icon or nil,
                 Columns = Data.Columns or Data.columns or 2,
                 SubPages = Data.SubPages or Data.subpages or false,
 
@@ -6376,6 +6416,9 @@ local Library do
             }
 
             Library.SearchItems[Page] = { }
+
+            local HasIcon = Page.Icon ~= nil and tostring(Page.Icon) ~= ""
+            local TabWidth = MathMax(HasIcon and 106 or 92, #Page.Name * 7 + (HasIcon and 42 or 28))
 
             local Items = { } do
                 Items["PageContent"] = Instances:Create("CanvasGroup", {
@@ -6421,10 +6464,10 @@ local Library do
                     Text = "",
                     AutoButtonColor = false,
                     BackgroundTransparency = 1,
-                    Size = UDim2New(0, 0, 0, 30),
+                    Size = UDim2New(0, TabWidth, 0, 32),
                     BorderSizePixel = 0,
                     ZIndex = 2,
-                    TextSize = 14,
+                    TextSize = 15,
                     BackgroundColor3 = FromRGB(34, 39, 45)
                 })  Items["Inactive"]:AddToTheme({BackgroundColor3 = "Element"})
 
@@ -6449,31 +6492,33 @@ local Library do
                     BorderColor3 = FromRGB(0, 0, 0),
                     Size = UDim2New(0, 22, 0, 22),
                     AnchorPoint = Vector2New(0, 0.5),
-                    Image = "rbxassetid://"..Page.Icon,
+                    Image = ResolveImage(Page.Icon),
                     BackgroundTransparency = 1,
                     Position = UDim2New(0, 5, 0.5, 0),
                     ZIndex = 2,
                     BorderSizePixel = 0,
-                    BackgroundColor3 = FromRGB(255, 255, 255)
+                    BackgroundColor3 = FromRGB(255, 255, 255),
+                    Visible = HasIcon
                 })  Items["Icon"]:AddToTheme({ImageColor3 = "Image"})
 
                 Items["Text"] = Instances:Create("TextLabel", {
                     Parent = Items["Inactive"].Instance,
                     Name = "\0",
                     FontFace = Library.Font,
-                    Visible = false,
+                    Visible = true,
                     Active = true,
-                    AnchorPoint = Vector2New(0, 0.5),
+                    AnchorPoint = HasIcon and Vector2New(0, 0.5) or Vector2New(0.5, 0.5),
                     ZIndex = 2,
-                    TextSize = 14,
-                    Size = UDim2New(0, 0, 0, 15),
+                    TextSize = 15,
+                    Size = HasIcon and UDim2New(1, -38, 0, 16) or UDim2New(1, -12, 0, 16),
                     TextColor3 = FromRGB(255, 255, 255),
                     BorderColor3 = FromRGB(0, 0, 0),
                     Text = Page.Name,
+                    TextTransparency = 0.35,
                     BackgroundTransparency = 1,
-                    Position = UDim2New(0, 32, 0.5, 0),
-                    AutomaticSize = Enum.AutomaticSize.X,
+                    Position = HasIcon and UDim2New(0, 28, 0.5, 0) or UDim2New(0.5, 0, 0.5, 0),
                     BorderSizePixel = 0,
+                    TextXAlignment = HasIcon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center,
                     BackgroundColor3 = FromRGB(255, 255, 255)
                 })  Items["Text"]:AddToTheme({TextColor3 = "Text"})
 
@@ -6569,7 +6614,7 @@ local Library do
                     })
                 end
 
-                Items["Inactive"].Instance.Size = UDim2New(0, 34, 0, 30)
+                Items["Inactive"].Instance.Size = UDim2New(0, TabWidth, 0, 32)
             end
 
             local Debounce = false
@@ -6586,17 +6631,21 @@ local Library do
                 Debounce = true 
 
                 if Bool then
-                    Items["Text"].Instance.Visible = true 
-                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 0, Size = UDim2New(0, Items["Text"].Instance.TextBounds.X + 46, 0, 30)})
-                    Items["Icon"]:ChangeItemTheme({ImageColor3 = "Accent"})
-                    Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Accent, ImageTransparency = 0})
+                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 0, Size = UDim2New(0, TabWidth, 0, 32)})
+                    Items["Text"]:Tween(nil, {TextTransparency = 0.02})
+
+                    if HasIcon then
+                        Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Accent, ImageTransparency = 0})
+                    end
 
                     Library.CurrentPage = Page
                 else
-                    Items["Text"].Instance.Visible = false 
-                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 0.18, Size = UDim2New(0, 34, 0, 30)})
-                    Items["Icon"]:ChangeItemTheme({ImageColor3 = "Image"})
-                    Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Image, ImageTransparency = 0.5}) 
+                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 0.18, Size = UDim2New(0, TabWidth, 0, 32)})
+                    Items["Text"]:Tween(nil, {TextTransparency = 0.35})
+
+                    if HasIcon then
+                        Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Image, ImageTransparency = 0.5})
+                    end
                 end
 
                 local NewTween = Items["PageContent"]:Tween(nil, {GroupTransparency = Bool and 0 or 1})
@@ -6629,7 +6678,7 @@ local Library do
                 Page = self,
 
                 Name = Data.Name or Data.name or "SubPage",
-                Icon = Data.Icon or Data.icon or "9080568477801",
+                Icon = Data.Icon or Data.icon or nil,
                 Columns = Data.Columns or Data.columns or 2,
                 
                 Items = { },
@@ -6637,6 +6686,9 @@ local Library do
             }
 
             Library.SearchItems[SubPage] = { }
+
+            local HasIcon = SubPage.Icon ~= nil and tostring(SubPage.Icon) ~= ""
+            local TabWidth = MathMax(HasIcon and 106 or 92, #SubPage.Name * 7 + (HasIcon and 42 or 28))
 
             local Items = { } do
                 Items["PageContent"] = Instances:Create("CanvasGroup", {
@@ -6672,10 +6724,10 @@ local Library do
                     AutoButtonColor = false,
                     AutomaticSize = Enum.AutomaticSize.X,
                     BackgroundTransparency = 1,
-                    Size = UDim2New(0, 0, 0, 32),
+                    Size = UDim2New(0, TabWidth, 0, 32),
                     BorderSizePixel = 0,
                     ZIndex = 2,
-                    TextSize = 14,
+                    TextSize = 15,
                     BackgroundColor3 = FromRGB(16, 18, 21)
                 })  Items["Inactive"]:AddToTheme({BackgroundColor3 = "Background"})
 
@@ -6692,31 +6744,33 @@ local Library do
                     BorderColor3 = FromRGB(0, 0, 0),
                     Size = UDim2New(0, 22, 0, 22),
                     AnchorPoint = Vector2New(0, 0.5),
-                    Image = "rbxassetid://"..SubPage.Icon,
+                    Image = ResolveImage(SubPage.Icon),
                     BackgroundTransparency = 1,
                     Position = UDim2New(0, 5, 0.5, 0),
                     ZIndex = 2,
                     BorderSizePixel = 0,
-                    BackgroundColor3 = FromRGB(255, 255, 255)
+                    BackgroundColor3 = FromRGB(255, 255, 255),
+                    Visible = HasIcon
                 })  Items["Icon"]:AddToTheme({ImageColor3 = "Image"})
 
                 Items["Text"] = Instances:Create("TextLabel", {
                     Parent = Items["Inactive"].Instance,
                     Name = "\0",
                     FontFace = Library.Font,
-                    Visible = false,
+                    Visible = true,
                     Active = true,
-                    AnchorPoint = Vector2New(0, 0.5),
+                    AnchorPoint = HasIcon and Vector2New(0, 0.5) or Vector2New(0.5, 0.5),
                     ZIndex = 2,
-                    TextSize = 14,
-                    Size = UDim2New(0, 0, 0, 15),
+                    TextSize = 15,
+                    Size = HasIcon and UDim2New(1, -38, 0, 16) or UDim2New(1, -12, 0, 16),
                     TextColor3 = FromRGB(255, 255, 255),
                     BorderColor3 = FromRGB(0, 0, 0),
                     Text = SubPage.Name,
+                    TextTransparency = 0.35,
                     BackgroundTransparency = 1,
-                    Position = UDim2New(0, 32, 0.5, 0),
-                    AutomaticSize = Enum.AutomaticSize.X,
+                    Position = HasIcon and UDim2New(0, 28, 0.5, 0) or UDim2New(0.5, 0, 0.5, 0),
                     BorderSizePixel = 0,
+                    TextXAlignment = HasIcon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center,
                     BackgroundColor3 = FromRGB(255, 255, 255)
                 })  Items["Text"]:AddToTheme({TextColor3 = "Text"})
 
@@ -6774,17 +6828,21 @@ local Library do
                 Debounce = true 
 
                 if Bool then
-                    Items["Text"].Instance.Visible = true 
-                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 0, Size = UDim2New(0, Items["Text"].Instance.TextBounds.X + 38, 0, 32)})
-                    Items["Icon"]:ChangeItemTheme({ImageColor3 = "Accent"})
-                    Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Accent, ImageTransparency = 0}) 
+                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 0, Size = UDim2New(0, TabWidth, 0, 32)})
+                    Items["Text"]:Tween(nil, {TextTransparency = 0.02}) 
+
+                    if HasIcon then
+                        Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Accent, ImageTransparency = 0})
+                    end
 
                     Library.CurrentPage = SubPage
                 else
-                    Items["Text"].Instance.Visible = false 
-                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 1, Size = UDim2New(0, 25, 0, 32)})
-                    Items["Icon"]:ChangeItemTheme({ImageColor3 = "Image"})
-                    Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Image, ImageTransparency = 0.5}) 
+                    Items["Inactive"]:Tween(nil, {BackgroundTransparency = 1, Size = UDim2New(0, TabWidth, 0, 32)})
+                    Items["Text"]:Tween(nil, {TextTransparency = 0.35}) 
+
+                    if HasIcon then
+                        Items["Icon"]:Tween(nil, {ImageColor3 = Library.Theme.Image, ImageTransparency = 0.5})
+                    end
                 end
 
                 local NewTween = Items["PageContent"]:Tween(nil, {GroupTransparency = Bool and 0 or 1})
@@ -7618,10 +7676,12 @@ local Library do
 
                 Name = Data.Name or Data.name or "Section",
                 Side = Data.Side or Data.side or 1,
-                Icon = Data.Icon or Data.icon or "9080568477801",
+                Icon = Data.Icon or Data.icon or nil,
 
                 Items = { }
             }
+
+            local HasIcon = Section.Icon ~= nil and tostring(Section.Icon) ~= ""
 
             local Items = { } do
                 Items["Section"] = Instances:Create("Frame", {
@@ -7695,7 +7755,7 @@ local Library do
                     Text = Section.Name,
                     BorderSizePixel = 0,
                     AnchorPoint = Vector2New(0, 0.5),
-                    Size = UDim2New(1, -125, 0, 15),
+                    Size = HasIcon and UDim2New(1, -46, 0, 15) or UDim2New(1, -20, 0, 15),
                     BackgroundTransparency = 1,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     Position = UDim2New(0, 10, 0.5, 0),
@@ -7712,12 +7772,13 @@ local Library do
                     BorderColor3 = FromRGB(0, 0, 0),
                     Size = UDim2New(0, 18, 0, 18),
                     AnchorPoint = Vector2New(1, 0.5),
-                    Image = "rbxassetid://"..Section.Icon,
+                    Image = ResolveImage(Section.Icon),
                     BackgroundTransparency = 1,
                     Position = UDim2New(1, -10, 0.5, -1),
                     ZIndex = 2,
                     BorderSizePixel = 0,
-                    BackgroundColor3 = FromRGB(255, 255, 255)
+                    BackgroundColor3 = FromRGB(255, 255, 255),
+                    Visible = HasIcon
                 })  Items["Icon"]:AddToTheme({ImageColor3 = "Accent"})
 
                 Instances:Create("Frame", {
@@ -8102,7 +8163,8 @@ local Library do
                     Size = UDim2New(0, 14, 0, 14),
                     ZIndex = 3,
                     BorderSizePixel = 0,
-                    BackgroundColor3 = FromRGB(255, 255, 255)
+                    BackgroundColor3 = FromRGB(255, 255, 255),
+                    Visible = false
                 })
 
                 Instances:Create("UICorner", {

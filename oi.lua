@@ -159,7 +159,7 @@ local function getProfile()
 
 	local width = math.clamp(math.floor(viewport.X * widthScale), isPhone and 292 or 600, isPhone and 372 or 900)
 	local height = math.clamp(math.floor(viewport.Y * heightScale), isPhone and 388 or 450, isPhone and 620 or 650)
-	local sidebarWidth = isPhone and 104 or (isTablet and 126 or 138)
+	local sidebarWidth = isPhone and 92 or (isTablet and 104 or 112)
 
 	return {
 		Device = isPhone and "Phone" or (isTablet and "Tablet" or "PC"),
@@ -371,12 +371,13 @@ local function makeCard(parent, radius)
 		BackgroundColor3 = Theme.Section,
 		BorderSizePixel = 0,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, -6, 0, 0),
-		Position = UDim2.new(0, 3, 0, 0)
+		ClipsDescendants = false,
+		Size = UDim2.new(1, -12, 0, 0),
+		Position = UDim2.new(0, 6, 0, 0)
 	})
 
 	addCorner(card, radius or 18)
-	addStroke(card, Theme.Stroke, 1, 0.86)
+	addStroke(card, Theme.Stroke, 1, 0.76)
 	return card
 end
 
@@ -523,74 +524,69 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 
 	local shell = create("Frame", {
 		Parent = parent,
-		BackgroundColor3 = Theme.Background,
+		BackgroundColor3 = Color3.fromRGB(58, 58, 58),
 		BorderSizePixel = 0,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, 0, 0, 0),
-		Visible = false
+		AutomaticSize = Enum.AutomaticSize.None,
+		Size = UDim2.fromOffset(156, 214),
+		Visible = false,
+		ClipsDescendants = true
 	})
-	addCorner(shell, 16)
-	addStroke(shell, Theme.Stroke, 1, 0.84)
-	addPadding(shell, 12, 12, 12, 12)
-	addList(shell, 8, false)
+	addCorner(shell, 8)
+	addStroke(shell, Theme.Stroke, 1, 0.66)
 
-	local titleRow = create("Frame", {
+	local header = create("Frame", {
 		Parent = shell,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 0, 18)
+		Position = UDim2.fromOffset(8, 6),
+		Size = UDim2.new(1, -16, 0, 16)
 	})
 
-	makeTextLabel(titleRow, {
-		Text = "Color Picker",
+	makeTextLabel(header, {
+		Text = "Palette",
 		TextColor3 = Theme.Text,
-		TextSize = 13,
+		TextSize = 12,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -96, 0, 16),
-		Position = UDim2.new(0, 0, 0, 1)
+		Size = UDim2.new(1, -40, 0, 16),
+		TextWrapped = false
 	})
 
 	local preview = create("Frame", {
-		Parent = titleRow,
+		Parent = header,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -36, 0.5, 0),
+		Position = UDim2.new(1, -22, 0.5, 0),
 		BackgroundColor3 = item.Value,
 		BorderSizePixel = 0,
-		Size = UDim2.fromOffset(18, 18)
+		Size = UDim2.fromOffset(14, 14)
 	})
-	addCorner(preview, 5)
-	addStroke(preview, Theme.Stroke, 1, 0.76)
+	addCorner(preview, 999)
+	addStroke(preview, Theme.Stroke, 1, 0.58)
 
 	local closeButton = create("TextButton", {
-		Parent = titleRow,
+		Parent = header,
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, 0, 0.5, 0),
-		BackgroundColor3 = Theme.Input,
-		BorderSizePixel = 0,
-		AutoButtonColor = false,
-		Size = UDim2.fromOffset(26, 18),
-		Text = "X",
-		TextColor3 = Theme.Text,
-		TextSize = 11,
-		FontFace = Font.fromEnum(Enum.Font.GothamBold)
-	})
-	addCorner(closeButton, 5)
-	addStroke(closeButton, Theme.Stroke, 1, 0.82)
-
-	local pickerRow = create("Frame", {
-		Parent = shell,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 0, 118)
+		AutoButtonColor = false,
+		Size = UDim2.fromOffset(14, 14),
+		Text = "x",
+		TextColor3 = Theme.Text,
+		TextSize = 12,
+		FontFace = Font.fromEnum(Enum.Font.GothamBold)
 	})
 
-	local colorArea = create("Frame", {
-		Parent = pickerRow,
+	local colorArea = create("TextButton", {
+		Parent = shell,
 		BackgroundColor3 = Color3.fromHSV(hue, 1, 1),
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, -28, 1, 0)
+		AutoButtonColor = false,
+		Text = "",
+		Position = UDim2.fromOffset(6, 26),
+		Size = UDim2.fromOffset(144, 144)
 	})
-	addCorner(colorArea, 10)
+	addCorner(colorArea, 4)
+	addStroke(colorArea, Theme.Stroke, 1, 0.7)
 
 	local whiteLayer = create("Frame", {
 		Parent = colorArea,
@@ -598,7 +594,7 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		BorderSizePixel = 0,
 		Size = UDim2.new(1, 0, 1, 0)
 	})
-	addCorner(whiteLayer, 10)
+	addCorner(whiteLayer, 4)
 	create("UIGradient", {
 		Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
@@ -618,7 +614,7 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		BorderSizePixel = 0,
 		Size = UDim2.new(1, 0, 1, 0)
 	})
-	addCorner(blackLayer, 10)
+	addCorner(blackLayer, 4)
 	create("UIGradient", {
 		Color = ColorSequence.new(Color3.new(0, 0, 0), Color3.new(0, 0, 0)),
 		Transparency = NumberSequence.new({
@@ -632,31 +628,33 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 	local areaCursor = create("Frame", {
 		Parent = colorArea,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0,
-		Size = UDim2.fromOffset(10, 10)
+		Rotation = 45,
+		Size = UDim2.fromOffset(6, 6)
 	})
-	addCorner(areaCursor, 999)
-	addStroke(areaCursor, Color3.new(0, 0, 0), 1, 0.25)
+	addStroke(areaCursor, Color3.new(0, 0, 0), 1.5, 0)
 
-	local hueBar = create("Frame", {
-		Parent = pickerRow,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 0),
+	local hueBar = create("TextButton", {
+		Parent = shell,
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BorderSizePixel = 0,
-		Size = UDim2.fromOffset(14, 118)
+		AutoButtonColor = false,
+		Text = "",
+		Position = UDim2.fromOffset(6, 176),
+		Size = UDim2.fromOffset(144, 10)
 	})
-	addCorner(hueBar, 999)
+	addCorner(hueBar, 2)
+	addStroke(hueBar, Theme.Stroke, 1, 0.7)
 	create("UIGradient", {
-		Rotation = 90,
+		Rotation = 0,
 		Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-			ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 255, 0)),
-			ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+			ColorSequenceKeypoint.new(0.1666667, Color3.fromRGB(255, 0, 255)),
+			ColorSequenceKeypoint.new(0.3333333, Color3.fromRGB(0, 0, 255)),
 			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
-			ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),
-			ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+			ColorSequenceKeypoint.new(0.6666667, Color3.fromRGB(0, 255, 0)),
+			ColorSequenceKeypoint.new(0.8333333, Color3.fromRGB(255, 255, 0)),
 			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
 		}),
 		Parent = hueBar
@@ -665,59 +663,21 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 	local hueCursor = create("Frame", {
 		Parent = hueBar,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = Color3.fromRGB(252, 252, 252),
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, 4, 0, 3)
-	})
-	addCorner(hueCursor, 999)
-
-	local bottomRow = create("Frame", {
-		Parent = shell,
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 0, 30)
+		Size = UDim2.new(0, 1, 1, 0)
 	})
 
-	local hexBox = makeInputBox(bottomRow, {
-		BackgroundColor3 = Theme.Input,
-		Size = UDim2.new(1, -124, 0, 30),
+	local valueText = makeTextLabel(shell, {
+		Position = UDim2.fromOffset(8, 192),
+		AutomaticSize = Enum.AutomaticSize.None,
+		Size = UDim2.new(1, -16, 0, 14),
 		Text = colorToHex(item.Value),
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextYAlignment = Enum.TextYAlignment.Center
-	})
-	addStroke(hexBox, Theme.Stroke, 1, 0.84)
-
-	local applyHexButton = create("TextButton", {
-		Parent = bottomRow,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -56, 0, 0),
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-		BorderSizePixel = 0,
-		AutoButtonColor = false,
-		Size = UDim2.fromOffset(54, 30),
-		Text = "Apply",
-		TextColor3 = Color3.fromRGB(5, 5, 6),
-		TextSize = 12,
-		FontFace = Font.fromEnum(Enum.Font.GothamMedium)
-	})
-	addCorner(applyHexButton, 10)
-	addStroke(applyHexButton, Theme.Stroke, 1, 0.94)
-
-	local closeFooterButton = create("TextButton", {
-		Parent = bottomRow,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 0),
-		BackgroundColor3 = Theme.Input,
-		BorderSizePixel = 0,
-		AutoButtonColor = false,
-		Size = UDim2.fromOffset(48, 30),
-		Text = "Close",
 		TextColor3 = Theme.Text,
 		TextSize = 11,
-		FontFace = Font.fromEnum(Enum.Font.GothamMedium)
+		TextWrapped = false,
+		TextXAlignment = Enum.TextXAlignment.Center
 	})
-	addCorner(closeFooterButton, 10)
-	addStroke(closeFooterButton, Theme.Stroke, 1, 0.84)
 
 	local function updateVisuals(skipCallback)
 		local color = Color3.fromHSV(hue, saturation, value)
@@ -725,8 +685,8 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		preview.BackgroundColor3 = color
 		colorArea.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
 		areaCursor.Position = UDim2.new(saturation, 0, 1 - value, 0)
-		hueCursor.Position = UDim2.new(0.5, 0, hue, 0)
-		hexBox.Text = colorToHex(color)
+		hueCursor.Position = UDim2.new(hue, 0, 0.5, 0)
+		valueText.Text = colorToHex(color)
 		if not skipCallback then
 			safeCallback(callback, color)
 		end
@@ -739,7 +699,7 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 	end
 
 	local function setFromHue(position)
-		hue = math.clamp((position.Y - hueBar.AbsolutePosition.Y) / hueBar.AbsoluteSize.Y, 0, 1)
+		hue = math.clamp((position.X - hueBar.AbsolutePosition.X) / hueBar.AbsoluteSize.X, 0, 1)
 		updateVisuals()
 	end
 
@@ -779,42 +739,7 @@ local function createColorPickerWidget(parent, defaultColor, callback)
 		end
 	end)
 
-	local function applyHex(rawText)
-		local color = hexToColor(rawText or hexBox.Text)
-		if not color then
-			hexBox.Text = colorToHex(item.Value)
-			return false
-		end
-		hue, saturation, value = Color3.toHSV(color)
-		updateVisuals()
-		return true
-	end
-
-	hexBox.FocusLost:Connect(function()
-		applyHex(hexBox.Text)
-	end)
-	applyHexButton.Activated:Connect(function()
-		local typedText = hexBox.Text
-		pcall(function()
-			hexBox:ReleaseFocus(true)
-		end)
-		if applyHex(typedText) then
-			item:SetVisible(false)
-		end
-	end)
-	applyHexButton.MouseButton1Click:Connect(function()
-		local typedText = hexBox.Text
-		pcall(function()
-			hexBox:ReleaseFocus(true)
-		end)
-		if applyHex(typedText) then
-			item:SetVisible(false)
-		end
-	end)
 	closeButton.MouseButton1Click:Connect(function()
-		item:SetVisible(false)
-	end)
-	closeFooterButton.MouseButton1Click:Connect(function()
 		item:SetVisible(false)
 	end)
 
@@ -1114,12 +1039,8 @@ function Section:AddToggle(options)
 	function item:SetColor(color)
 		self.Color = color
 		if colorButton then
-			colorButton.BackgroundColor3 = color
-			if colorButtonGradient then
-				colorButtonGradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-					ColorSequenceKeypoint.new(1, color)
-				})
+			if self.ColorButtonInner then
+				self.ColorButtonInner.BackgroundColor3 = color
 			end
 		end
 		if self.Value then
@@ -1139,15 +1060,24 @@ function Section:AddToggle(options)
 
 		colorButton = create("TextButton", {
 			Parent = accessoryWrap,
-			BackgroundColor3 = defaultColor,
+			BackgroundColor3 = Color3.fromRGB(42, 42, 42),
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
 			LayoutOrder = -1,
 			Size = UDim2.new(0, 18, 0, 18),
 			Text = ""
 		})
-		addCorner(colorButton, 4)
-		addStroke(colorButton, Theme.Stroke, 1, 0.8)
+		addCorner(colorButton, 999)
+		addStroke(colorButton, Color3.fromRGB(120, 120, 120), 1, 0.18)
+		local colorButtonInner = create("Frame", {
+			Parent = colorButton,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			Size = UDim2.fromOffset(10, 10),
+			BackgroundColor3 = defaultColor,
+			BorderSizePixel = 0
+		})
+		addCorner(colorButtonInner, 999)
 
 		local pickerObject = createColorPickerWidget(panel, defaultColor, function(color)
 			item:SetColor(color)
@@ -1177,6 +1107,7 @@ function Section:AddToggle(options)
 
 		pickerObject:Set(defaultColor)
 		updateLabelWidths()
+		item.ColorButtonInner = colorButtonInner
 		return colorPickerObject
 	end
 
@@ -1635,15 +1566,24 @@ function Section:AddColorPicker(options)
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -20, 0.5, 0),
 		Size = UDim2.new(0, 18, 0, 18),
+		BackgroundColor3 = Color3.fromRGB(42, 42, 42),
+		BorderSizePixel = 0
+	})
+	addCorner(preview, 999)
+	addStroke(preview, Color3.fromRGB(120, 120, 120), 1, 0.18)
+	local previewInner = create("Frame", {
+		Parent = preview,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.fromOffset(10, 10),
 		BackgroundColor3 = default,
 		BorderSizePixel = 0
 	})
-	addCorner(preview, 4)
-	addStroke(preview, Theme.Stroke, 1, 0.8)
+	addCorner(previewInner, 999)
 
 	local picker = createColorPickerWidget(shell, default, function(color)
 		item.Value = color
-		preview.BackgroundColor3 = color
+		previewInner.BackgroundColor3 = color
 		safeCallback(options.Callback, color)
 	end)
 	picker.Frame.Parent = shell
@@ -1651,7 +1591,7 @@ function Section:AddColorPicker(options)
 
 	function item:Set(value)
 		self.Value = picker:Set(value)
-		preview.BackgroundColor3 = self.Value
+		previewInner.BackgroundColor3 = self.Value
 		return self.Value
 	end
 
@@ -1913,7 +1853,7 @@ function CloudyUI:CreateTab(name, options)
 	tab.SectionCount = 0
 	self.Tabs[name] = tab
 
-	if not options.HideSidebarButton then
+	if self.ShowSidebarTabs and self.NavList and not options.HideSidebarButton then
 		local nav = create("TextButton", {
 			Parent = self.NavList,
 			BackgroundColor3 = Color3.fromRGB(6, 6, 7),
@@ -1985,7 +1925,7 @@ function CloudyUI:CreateTab(name, options)
 			BackgroundColor3 = Theme.Input,
 			BorderSizePixel = 0,
 			AutoButtonColor = false,
-			Size = UDim2.new(0, 96, 0, 28),
+			Size = UDim2.new(0, 78, 0, 28),
 			Text = options.QuickName or name,
 			FontFace = Font.fromEnum(Enum.Font.GothamMedium),
 			TextSize = 11,
@@ -2085,16 +2025,12 @@ function CloudyUI:ApplyResponsiveLayout(forceCenter)
 	self.Sidebar.Size = UDim2.new(0, profile.SidebarWidth, 1, 0)
 	self.ContentShell.Size = UDim2.new(1, -(profile.SidebarWidth + 16), 1, 0)
 	self.ContentShell.Position = UDim2.new(0, profile.SidebarWidth + 16, 0, 0)
-	self.BrandCard.Size = UDim2.new(1, 0, 0, profile.IsPhone and 72 or 78)
-	if self.SidebarTop then
-		self.SidebarTop.Size = UDim2.new(1, 0, 1, -(profile.IsPhone and 84 or 92))
-	end
-	if self.SidebarBottom then
-		self.SidebarBottom.Size = UDim2.new(1, 0, 0, profile.IsPhone and 72 or 78)
-		self.SidebarBottom.Position = UDim2.new(0, 0, 1, -(profile.IsPhone and 72 or 78))
-	end
+	self.BrandCard.Size = UDim2.new(1, 0, 0, profile.IsPhone and 126 or 138)
 	self.ToggleButton.Size = profile.IsPhone and UDim2.fromOffset(48, 48) or UDim2.fromOffset(52, 52)
-	self.QuickTabs.Size = UDim2.new(0, math.min(self.ContentShell.AbsoluteSize.X, profile.IsPhone and 320 or 420), 0, 32)
+	if self.QuickTabsShell then
+		self.QuickTabsShell.Size = UDim2.new(0, math.min(self.ContentShell.AbsoluteSize.X - 12, profile.IsPhone and 304 or 356), 0, 44)
+	end
+	self.QuickTabs.Size = UDim2.new(1, -12, 1, -10)
 	self.ResizeHandle.Visible = not profile.IsPhone
 	for _, tab in pairs(self.Tabs) do
 		if tab.LeftColumn and tab.RightColumn then
@@ -2397,15 +2333,6 @@ function CloudyUI:CreateDefaultWindow(config)
 	addCorner(sidebar, 0)
 	addStroke(sidebar, Theme.Stroke, 1, 0.94)
 
-	local sidebarAccent = create("Frame", {
-		Parent = sidebar,
-		BackgroundColor3 = selfObject.AccentColor,
-		BorderSizePixel = 0,
-		Size = UDim2.new(0, 1, 1, -18),
-		Position = UDim2.new(1, -1, 0, 9)
-	})
-	addCorner(sidebarAccent, 999)
-
 	local sidebarContent = create("Frame", {
 		Parent = sidebar,
 		BackgroundTransparency = 1,
@@ -2414,29 +2341,12 @@ function CloudyUI:CreateDefaultWindow(config)
 		Position = UDim2.new(0, 12, 0, 9)
 	})
 
-	local sidebarTop = create("Frame", {
-		Parent = sidebarContent,
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 0, 0),
-		Size = UDim2.new(1, 0, 1, -(profile.IsPhone and 84 or 92))
-	})
-	addList(sidebarTop, 8, false)
-
-	local sidebarBottom = create("Frame", {
-		Parent = sidebarContent,
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 1, -(profile.IsPhone and 72 or 78)),
-		Size = UDim2.new(1, 0, 0, profile.IsPhone and 72 or 78)
-	})
-
 	local brandCard = create("TextButton", {
-		Parent = sidebarBottom,
+		Parent = sidebarContent,
 		BackgroundColor3 = Color3.fromRGB(3, 3, 4),
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(1, 0, 0, profile.IsPhone and 126 or 138),
 		Text = ""
 	})
 	addCorner(brandCard, 10)
@@ -2446,77 +2356,37 @@ function CloudyUI:CreateDefaultWindow(config)
 		Parent = brandCard,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 10, 0.5, 0),
-		Size = profile.IsPhone and UDim2.fromOffset(34, 34) or UDim2.fromOffset(38, 38),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 12),
+		Size = profile.IsPhone and UDim2.fromOffset(42, 42) or UDim2.fromOffset(46, 46),
 		Image = getAvatarUrl(LocalPlayer.UserId)
 	})
 	addCorner(brandAvatar, 999)
 	addStroke(brandAvatar, Theme.Stroke, 1, 0.84)
 
 	local brandName = makeTextLabel(brandCard, {
-		AnchorPoint = Vector2.new(0, 0),
-		Position = UDim2.new(0, 58, 0, profile.IsPhone and 14 or 16),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, profile.IsPhone and 62 or 68),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -120, 0, 16),
+		Size = UDim2.new(1, -18, 0, 16),
 		Text = LocalPlayer.DisplayName,
 		FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
 		TextSize = 11,
 		TextWrapped = false,
-		TextXAlignment = Enum.TextXAlignment.Left
+		TextXAlignment = Enum.TextXAlignment.Center
 	})
 	addTextConstraint(brandName, 8, 11)
 
 	makeTextLabel(brandCard, {
-		AnchorPoint = Vector2.new(0, 0),
-		Position = UDim2.new(0, 58, 0, profile.IsPhone and 32 or 34),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, profile.IsPhone and 80 or 86),
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -120, 0, 14),
-		Text = "Guest user",
+		Size = UDim2.new(1, -18, 0, 14),
+		Text = "@" .. LocalPlayer.Name,
 		TextColor3 = Theme.MutedText,
-		TextSize = 10,
-		TextXAlignment = Enum.TextXAlignment.Left
-	})
-
-	local homeHint = create("Frame", {
-		Parent = brandCard,
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -10, 0.5, 0),
-		BackgroundColor3 = Theme.Input,
-		BorderSizePixel = 0,
-		Size = UDim2.new(0, 54, 0, 24)
-	})
-	addCorner(homeHint, 999)
-	addStroke(homeHint, Theme.Stroke, 1, 0.86)
-
-	makeTextLabel(homeHint, {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -8, 0, 14),
-		Text = "Home",
-		TextColor3 = Theme.Text,
 		TextSize = 10,
 		TextXAlignment = Enum.TextXAlignment.Center
 	})
-
-	local navLabel = makeTextLabel(sidebarTop, {
-		Text = "Pages",
-		TextColor3 = Theme.MutedText,
-		TextSize = 11,
-		FontFace = Font.fromEnum(Enum.Font.GothamMedium)
-	})
-	navLabel.Size = UDim2.new(1, 0, 0, 14)
-	navLabel.AutomaticSize = Enum.AutomaticSize.None
-
-	local navList = create("Frame", {
-		Parent = sidebarTop,
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, 0, 0, 0)
-	})
-	addList(navList, 8, false)
 
 	local contentShell = create("Frame", {
 		Parent = body,
@@ -2533,16 +2403,27 @@ function CloudyUI:CreateDefaultWindow(config)
 		Size = UDim2.new(1, 0, 1, -46)
 	})
 
-	local quickTabs = create("Frame", {
+	local quickTabsShell = create("Frame", {
 		Parent = contentShell,
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, 0, 1, 0),
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, 0),
+		BackgroundColor3 = Theme.Section,
+		BorderSizePixel = 0,
+		Size = UDim2.new(0, math.min(contentShell.AbsoluteSize.X - 12, profile.IsPhone and 304 or 356), 0, 44)
+	})
+	addCorner(quickTabsShell, 12)
+	addStroke(quickTabsShell, Theme.Stroke, 1, 0.86)
+
+	local quickTabs = create("Frame", {
+		Parent = quickTabsShell,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Size = UDim2.new(0, math.min(contentShell.AbsoluteSize.X, profile.IsPhone and 320 or 420), 0, 32)
+		Size = UDim2.new(1, -12, 1, -10)
 	})
 	local quickLayout = addList(quickTabs, 8, true)
-	quickLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	quickLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 	local resizeHandle = create("ImageButton", {
 		Parent = main,
@@ -2559,14 +2440,13 @@ function CloudyUI:CreateDefaultWindow(config)
 
 	selfObject.Screen = screen
 	selfObject.Main = main
+	selfObject.ShowSidebarTabs = config.ShowSidebarTabs == true
 	selfObject.Sidebar = sidebar
-	selfObject.SidebarAccent = sidebarAccent
-	selfObject.SidebarTop = sidebarTop
-	selfObject.SidebarBottom = sidebarBottom
 	selfObject.BrandCard = brandCard
-	selfObject.NavList = navList
+	selfObject.NavList = nil
 	selfObject.ContentShell = contentShell
 	selfObject.PageHolder = pageHolder
+	selfObject.QuickTabsShell = quickTabsShell
 	selfObject.QuickTabs = quickTabs
 	selfObject.ResizeHandle = resizeHandle
 	selfObject.ResizeIcon = resizeHandle
@@ -2589,298 +2469,7 @@ function CloudyUI:CreateDefaultWindow(config)
 		selfObject:ApplyResponsiveLayout(false)
 	end)
 
-	local homeTab = selfObject:CreateTab("Home", {HideSidebarButton = true, HideQuickButton = true})
-	local updatesTab = selfObject:CreateTab("Updates", {HideQuickButton = true})
-	local scriptsTab = selfObject:CreateTab("Scripts", {HideQuickButton = true})
-	local feedbackTab = selfObject:CreateTab("Feedback", {HideQuickButton = true})
-	local settingsTab = selfObject:CreateTab("Settings", {HideQuickButton = true})
-
-	brandCard.MouseButton1Click:Connect(function()
-		selfObject:SelectTab("Home")
-	end)
-
-	selfObject:BuildHome(homeTab)
-
-	updatesTab:AddCustomCard(function(card, container)
-		container.AutomaticSize = Enum.AutomaticSize.None
-		container.Size = UDim2.new(1, 0, 0, 174)
-
-		local first = create("Frame", {
-			Parent = container,
-			BackgroundColor3 = Theme.Input,
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, 0, 0, 0),
-			Size = UDim2.new(1, 0, 0, 74)
-		})
-		addCorner(first, 12)
-		addPadding(first, 12, 12, 12, 12)
-		addList(first, 4, false)
-		makeTextLabel(first, {
-			Text = "Latest Changes",
-			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
-			TextSize = 14
-		})
-		makeTextLabel(first, {
-			Text = "Cleaner two-column content, flatter controls, filled toggles, and a normal color picker.",
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-
-		local second = create("Frame", {
-			Parent = container,
-			BackgroundColor3 = Theme.Input,
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, 0, 0, 86),
-			Size = UDim2.new(1, 0, 0, 88)
-		})
-		addCorner(second, 12)
-		addPadding(second, 12, 12, 12, 12)
-		addList(second, 4, false)
-		makeTextLabel(second, {
-			Text = "Feedback Ready",
-			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
-			TextSize = 14
-		})
-		makeTextLabel(second, {
-			Text = "Feedback and settings both send the avatar, username, and message to your endpoint in the same clean style.",
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-	end, {Column = "left"})
-
-	local updates = updatesTab:AddSection("Panel Notes", "The built-in pages stay on the left rail. Your loader tabs stay on the bottom-right row.", {Column = "right"})
-	updates:AddParagraph("Layout", "The content now fills left and right columns instead of a single stack.")
-	updates:AddParagraph("Borders", "Only buttons and dropdowns keep clear borders. Most controls stay flat.")
-
-	local scriptEntries = {
-		{
-			Name = "Da Hood",
-			PlaceId = 2788229376,
-			Column = "left"
-		},
-		{
-			Name = "Tha Bronx 3",
-			File = "bronx/Bronx.lua",
-			Column = "right"
-		},
-		{
-			Name = "Philly Streets 2",
-			File = "Philly.lua",
-			Column = "left"
-		},
-		{
-			Name = "Central Streets",
-			Column = "right"
-		},
-		{
-			Name = "Street Life Remastered",
-			File = "streelife.lua",
-			Column = "left"
-		}
-	}
-
-	for _, entry in ipairs(scriptEntries) do
-		scriptsTab:AddCustomCard(function(card, container)
-			container.AutomaticSize = Enum.AutomaticSize.None
-			container.Size = UDim2.new(1, 0, 0, 188)
-
-			local image = create("ImageLabel", {
-				Parent = container,
-				BackgroundColor3 = Theme.Input,
-				BorderSizePixel = 0,
-				Position = UDim2.new(0, 0, 0, 0),
-				Size = UDim2.new(1, 0, 0, 112),
-				Image = getGameImageForPlace(entry.PlaceId),
-				ScaleType = Enum.ScaleType.Crop
-			})
-			addCorner(image, 12)
-
-			local title = makeTextLabel(container, {
-				Position = UDim2.new(0, 0, 0, 122),
-				AutomaticSize = Enum.AutomaticSize.None,
-				Size = UDim2.new(1, 0, 0, 18),
-				Text = entry.Name,
-				FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
-				TextSize = 15,
-				TextWrapped = false
-			})
-
-			local status = makeTextLabel(container, {
-				Position = UDim2.new(0, 0, 0, 142),
-				AutomaticSize = Enum.AutomaticSize.None,
-				Size = UDim2.new(1, 0, 0, 14),
-				Text = entry.File and "Ready to execute" or "Script not configured yet",
-				TextColor3 = Theme.MutedText,
-				TextSize = 11,
-				TextWrapped = false
-			})
-
-			local executeButton = create("TextButton", {
-				Parent = container,
-				BackgroundColor3 = Theme.Input,
-				BorderSizePixel = 0,
-				AutoButtonColor = false,
-				Position = UDim2.new(0, 0, 0, 162),
-				Size = UDim2.new(1, 0, 0, 30),
-				Text = "",
-			})
-			addCorner(executeButton, 10)
-			addStroke(executeButton, Theme.Stroke, 1, 0.14)
-
-			makeTextLabel(executeButton, {
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.new(0.5, 0, 0.5, 0),
-				AutomaticSize = Enum.AutomaticSize.None,
-				Size = UDim2.new(1, -12, 0, 16),
-				Text = "Execute",
-				TextXAlignment = Enum.TextXAlignment.Center,
-				FontFace = Font.fromEnum(Enum.Font.GothamMedium),
-				TextSize = 13
-			})
-
-			executeButton.MouseButton1Click:Connect(function()
-				local ok, message = executeScriptEntry(entry)
-				if ok then
-					status.Text = "Executed"
-				else
-					status.Text = tostring(message)
-				end
-			end)
-		end, {Column = entry.Column})
-	end
-
-	local settings = settingsTab:AddSection("Appearance", "Accent changes only affect active UI parts.", {Column = "left"})
-	settings:AddColorPicker({
-		Title = "Accent Color",
-		Default = selfObject.AccentColor,
-		Callback = function(color)
-			selfObject:SetAccent(color)
-		end
-	})
-	settings:AddToggle({
-		Title = "Show Window",
-		Description = "Hide or show the main panel without removing the floating button.",
-		Default = true,
-		Callback = function(value)
-			selfObject:SetVisible(value)
-		end
-	})
-	settings:AddSlider({
-		Title = "Panel Width Preview",
-		Min = 760,
-		Max = 1180,
-		Default = profile.Size.X.Offset,
-		Callback = function(value)
-			if selfObject.Profile.IsPhone then
-				return
-			end
-			selfObject.ManualSize = true
-			selfObject.Main.Size = UDim2.fromOffset(value, selfObject.Main.Size.Y.Offset)
-			selfObject.Main.Position = clampPosition(selfObject.Main.Position, selfObject.Main.Size)
-		end
-	})
-
-	local settingsFeedback = settingsTab:AddSection("Send Feedback", "You can also send a message from settings.", {Column = "right"})
-	local settingsMessage = settingsFeedback:AddTextbox({
-		Title = "Feedback Message",
-		Placeholder = "Write your message here",
-		Lines = 5,
-		Default = ""
-	})
-	local settingsStatus = settingsFeedback:AddParagraph("Status", "Nothing sent yet.")
-	settingsFeedback:AddButton({
-		Title = "Send Feedback",
-		Description = "Posts the typed message using the configured endpoint.",
-		Callback = function()
-			local ok, response = selfObject:SubmitFeedback(settingsMessage:Get())
-			if ok then
-				settingsStatus:SetText("Feedback sent successfully.")
-			else
-				settingsStatus:SetText("Feedback failed: " .. tostring(response))
-			end
-		end
-	})
-
-	feedbackTab:AddCustomCard(function(card, container)
-		container.AutomaticSize = Enum.AutomaticSize.None
-		container.Size = UDim2.new(1, 0, 0, 92)
-
-		local avatar = create("ImageLabel", {
-			Parent = container,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, 0, 0, 4),
-			Size = UDim2.fromOffset(42, 42),
-			Image = getAvatarUrl(LocalPlayer.UserId)
-		})
-		addCorner(avatar, 999)
-
-		makeTextLabel(container, {
-			Position = UDim2.new(0, 56, 0, 6),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -56, 0, 16),
-			Text = LocalPlayer.DisplayName,
-			FontFace = Font.fromEnum(Enum.Font.GothamSemibold),
-			TextSize = 14
-		})
-		makeTextLabel(container, {
-			Position = UDim2.new(0, 56, 0, 24),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, -56, 0, 14),
-			Text = "@" .. LocalPlayer.Name,
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-		makeTextLabel(container, {
-			Position = UDim2.new(0, 0, 0, 58),
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, 0, 0, 28),
-			Text = "Your feedback message will show here in the same clean box style.",
-			TextColor3 = Theme.MutedText,
-			TextSize = 12
-		})
-	end, {Column = "left"})
-
-	local feedbackInfo = feedbackTab:AddSection("Send Feedback", "Hook this to your FastAPI endpoint. The payload includes Roblox profile data and the written message.", {Column = "right"})
-	feedbackInfo:AddLabel("If you leave the endpoint box empty, ConfigureFeedback or the endpoint textbox must be set before sending.")
-	local endpointBox = feedbackInfo:AddTextbox({
-		Title = "Endpoint URL",
-		Placeholder = DEFAULT_FEEDBACK_ENDPOINT,
-		Default = selfObject.FeedbackConfig.Endpoint
-	})
-	local messageBox = feedbackInfo:AddTextbox({
-		Title = "Feedback Message",
-		Placeholder = "Write what is broken, what needs changing, or what you want added.",
-		Lines = 6,
-		Default = ""
-	})
-	local statusText = feedbackInfo:AddParagraph("Status", "Nothing sent yet.")
-	feedbackInfo:AddButton({
-		Title = "Send Feedback",
-		Description = "Posts the message to your API and stores player identity data with it.",
-		Callback = function()
-			selfObject:ConfigureFeedback({
-				Endpoint = endpointBox:Get()
-			})
-
-			local ok, response = selfObject:SubmitFeedback(messageBox:Get())
-			if ok then
-				statusText:SetText("Feedback sent successfully.")
-			else
-				statusText:SetText("Feedback failed: " .. tostring(response))
-			end
-		end
-	})
-
-	local feedbackMeta = feedbackTab:AddSection("Payload Preview", "This is the data the feedback request sends along with the message.", {Column = "left"})
-	feedbackMeta:AddLabel("Username: " .. LocalPlayer.Name)
-	feedbackMeta:AddLabel("Display Name: " .. LocalPlayer.DisplayName)
-	feedbackMeta:AddLabel("User ID: " .. tostring(LocalPlayer.UserId))
-	feedbackMeta:AddLabel("Game ID: " .. tostring(game.GameId))
-	feedbackMeta:AddLabel("Executor: " .. getExecutorName())
-
 	selfObject:ApplyResponsiveLayout(true)
-	selfObject:SelectTab("Home")
 
 	local camera = workspace.CurrentCamera
 	if camera then
@@ -2900,14 +2489,6 @@ function CloudyUI:Tab(name, options)
 	return self:CreateTab(name, options)
 end
 
-local App = CloudyUI:CreateDefaultWindow({
-	Title = "Cloudy Developer",
-	Subtitle = "Home, updates, scripts, feedback, and settings with responsive sizing.",
-	AccentColor = Theme.Accent,
-	FeedbackEndpoint = DEFAULT_FEEDBACK_ENDPOINT
-})
-
-CloudyUI.App = App
 CloudyUI.Theme = Theme
 CloudyUI.DefaultFeedbackEndpoint = DEFAULT_FEEDBACK_ENDPOINT
 

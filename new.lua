@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
 local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -170,10 +171,10 @@ local function getViewportProfile()
 		WindowWidth = clamp(viewport.X * 0.42, 560, 760),
 		WindowHeight = clamp(viewport.Y * 0.80, 560, 860),
 		HeaderHeight = 58,
-		TabHeight = 48,
-		ControlText = 14,
-		TitleText = 22,
-		Corner = 16,
+		TabHeight = 40,
+		ControlText = 12,
+		TitleText = 18,
+		Corner = 12,
 		Padding = 16,
 		OpenButtonWidth = 116,
 		OpenButtonHeight = 44,
@@ -185,10 +186,10 @@ local function getViewportProfile()
 		profile.WindowWidth = clamp(viewport.X * 0.92, 300, 440)
 		profile.WindowHeight = clamp(viewport.Y * 0.84, 440, 760)
 		profile.HeaderHeight = 54
-		profile.TabHeight = 46
-		profile.ControlText = 14
-		profile.TitleText = 20
-		profile.Corner = 14
+		profile.TabHeight = 38
+		profile.ControlText = 12
+		profile.TitleText = 16
+		profile.Corner = 10
 		profile.Padding = 14
 		profile.OpenButtonWidth = 104
 		profile.OpenButtonHeight = 42
@@ -198,10 +199,10 @@ local function getViewportProfile()
 		profile.WindowWidth = clamp(viewport.X * 0.72, 460, 700)
 		profile.WindowHeight = clamp(viewport.Y * 0.82, 500, 820)
 		profile.HeaderHeight = 56
-		profile.TabHeight = 48
-		profile.ControlText = 14
-		profile.TitleText = 21
-		profile.Corner = 15
+		profile.TabHeight = 40
+		profile.ControlText = 12
+		profile.TitleText = 17
+		profile.Corner = 11
 		profile.Padding = 15
 		profile.OpenButtonWidth = 112
 		profile.OpenButtonHeight = 43
@@ -287,6 +288,43 @@ local function rgbToHex(color)
 	return string.format("#%02X%02X%02X", r, g, b)
 end
 
+local function httpGet(url)
+	local providers = {}
+
+	if syn and syn.request then
+		table.insert(providers, syn.request)
+	end
+	if http_request then
+		table.insert(providers, http_request)
+	end
+	if request then
+		table.insert(providers, request)
+	end
+
+	for _, provider in ipairs(providers) do
+		local success, response = pcall(function()
+			return provider({
+				Url = url,
+				Method = "GET",
+			})
+		end)
+
+		if success and response and ((response.Success == true) or response.StatusCode == 200) then
+			return response.Body
+		end
+	end
+
+	local success, body = pcall(function()
+		return HttpService:GetAsync(url)
+	end)
+
+	if success then
+		return body
+	end
+
+	return nil
+end
+
 local function resolveKeyCode(value)
 	if typeof(value) == "EnumItem" and value.EnumType == Enum.KeyCode then
 		return value
@@ -363,7 +401,7 @@ function Window:_applyTheme()
 	self.FooterUrlText.TextColor3 = self.Theme.Text
 	self.FooterUpdatedPrefix.TextColor3 = self.Theme.SubText
 	self.FooterUpdatedDate.TextColor3 = self.Theme.Accent
-	self.WindowShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+	self.WindowShadow.ImageTransparency = 1
 end
 
 function Window:_layoutHeader()
@@ -383,19 +421,19 @@ function Window:_updateTabStyles()
 		local selected = self.ActiveTab == tab
 		tab.Button.BackgroundTransparency = 1
 		tab.ButtonText.TextColor3 = selected and self.Theme.Text or self.Theme.SubText
-		tab.ButtonIndicator.BackgroundColor3 = tab.AccentColor or self.Theme.Accent
+		tab.ButtonIndicator.BackgroundColor3 = self.Theme.Accent
 		tab.ButtonIndicator.Visible = selected
 		tab.ButtonIndicator.BackgroundTransparency = selected and 0 or 1
 		tab.ButtonStroke.Transparency = 1
 		tab.Page.Visible = selected
 		tab.AccentDot.Visible = false
+		if selected then
+			tab.ButtonIndicator.Size = UDim2.fromOffset(tab.ButtonText.TextBounds.X, 2)
+			tab.ButtonIndicator.Position = UDim2.new(0, 0, 1, -2)
+		end
 	end
 
-	if self.ActiveTab then
-		self.TabUnderline.BackgroundColor3 = self.ActiveTab.AccentColor or self.Theme.Accent
-		self.TabUnderline.Size = UDim2.fromOffset(self.ActiveTab.Button.AbsoluteSize.X - 16, 2)
-		self.TabUnderline.Position = UDim2.new(0, self.ActiveTab.Button.AbsolutePosition.X - self.TabBarFrame.AbsolutePosition.X + 8 + self.TabBarFrame.Position.X.Offset, 1, -2)
-	end
+	self.TabUnderline.Visible = false
 end
 
 function Window:_updateResponsiveLayout()
@@ -409,7 +447,9 @@ function Window:_updateResponsiveLayout()
 	self.WindowShadow.Position = self.Window.Position
 
 	self.OpenButton.Size = UDim2.fromOffset(self.Profile.OpenButtonWidth, self.Profile.OpenButtonHeight)
-	self.OpenButton.Position = UDim2.new(1, -(self.Profile.Padding + 16), 0, self.Profile.Padding + GuiService:GetGuiInset().Y)
+	if not self.OpenButtonDragged then
+		self.OpenButton.Position = UDim2.new(1, -(self.Profile.Padding + 28), 0, self.Profile.Padding + GuiService:GetGuiInset().Y + 12)
+	end
 
 	self.Header.Size = UDim2.new(1, 0, 0, self.Profile.HeaderHeight)
 	self.TabBar.Size = UDim2.new(1, 0, 0, self.Profile.TabHeight)
@@ -421,7 +461,7 @@ function Window:_updateResponsiveLayout()
 	self.TitleLabel.TextSize = self.Profile.TitleText
 	self.SubtitleLabel.TextSize = math.max(11, self.Profile.TitleText - 8)
 	self.BadgeLabel.TextSize = 11
-	self.OpenButtonText.TextSize = 14
+	self.OpenButtonText.TextSize = 13
 	self.TabBarFrame.Size = UDim2.new(1, -(self.Profile.Padding * 2), 1, -10)
 	self.TabBarFrame.Position = UDim2.new(0, self.Profile.Padding, 0, 5)
 	self.UsernameLabel.Position = UDim2.new(1, -self.Profile.Padding, 0, 12)
@@ -472,6 +512,42 @@ function Window:SetPresenceCount(value)
 	self.FooterPresenceLabel.Text = tostring(value) .. " online"
 end
 
+function Window:BindPresenceEndpoint(options)
+	local config = options or {}
+	if not config.Url or config.Url == "" then
+		return
+	end
+
+	self.PresenceEndpoint = config.Url
+	self.PresenceInterval = config.Interval or 30
+
+	task.spawn(function()
+		while self.Gui.Parent and self.PresenceEndpoint == config.Url do
+			local body = httpGet(config.Url)
+			if body then
+				local ok, decoded = pcall(function()
+					return HttpService:JSONDecode(body)
+				end)
+
+				if ok and decoded then
+					local nextValue
+					if config.Parser then
+						nextValue = config.Parser(decoded)
+					elseif type(decoded) == "table" then
+						nextValue = decoded.online or decoded.count or decoded.users
+					end
+
+					if nextValue then
+						self:SetPresenceCount(nextValue)
+					end
+				end
+			end
+
+			task.wait(self.PresenceInterval)
+		end
+	end)
+end
+
 function Window:SetFooterUrl(value)
 	self.FooterUrlText.Text = value
 end
@@ -491,17 +567,11 @@ function Window:SetOpen(isOpen)
 
 	if isOpen then
 		self.Window.Visible = true
-		self.WindowShadow.Visible = true
+		self.WindowShadow.Visible = false
 		self.Window.GroupTransparency = 1
-		self.WindowShadow.ImageTransparency = 1
 		self.Window.Position = UDim2.new(0.5, 0, 0.53, 0)
-		self.WindowShadow.Position = self.Window.Position
 		tween(self.Window, 0.22, {
 			GroupTransparency = 0,
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-		})
-		tween(self.WindowShadow, 0.22, {
-			ImageTransparency = 0.42,
 			Position = UDim2.new(0.5, 0, 0.5, 0),
 		})
 		self.OpenButtonText.Text = "Close"
@@ -511,14 +581,9 @@ function Window:SetOpen(isOpen)
 			GroupTransparency = 1,
 			Position = UDim2.new(0.5, 0, 0.53, 0),
 		}, Enum.EasingStyle.Quad)
-		tween(self.WindowShadow, 0.18, {
-			ImageTransparency = 1,
-			Position = UDim2.new(0.5, 0, 0.53, 0),
-		}, Enum.EasingStyle.Quad)
 		animation.Completed:Once(function()
 			if not self.IsOpen then
 				self.Window.Visible = false
-				self.WindowShadow.Visible = false
 			end
 		end)
 	end
@@ -607,6 +672,50 @@ function Window:_enableDragging()
 
 		local delta = input.Position - startPosition
 		self.Window.Position = UDim2.new(
+			startOffset.X.Scale,
+			startOffset.X.Offset + delta.X,
+			startOffset.Y.Scale,
+			startOffset.Y.Offset + delta.Y
+		)
+	end)
+end
+
+function Window:_enableOpenButtonDragging()
+	local dragging = false
+	local dragInput
+	local startPosition
+	local startOffset
+
+	self.OpenButton.InputBegan:Connect(function(input)
+		if not isPrimaryInput(input) then
+			return
+		end
+
+		dragging = true
+		self.OpenButtonDragged = true
+		startPosition = input.Position
+		startOffset = self.OpenButton.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end)
+
+	self.OpenButton.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if not dragging or input ~= dragInput then
+			return
+		end
+
+		local delta = input.Position - startPosition
+		self.OpenButton.Position = UDim2.new(
 			startOffset.X.Scale,
 			startOffset.X.Offset + delta.X,
 			startOffset.Y.Scale,
@@ -714,16 +823,14 @@ end
 function Section:AddParagraph(title, content)
 	local holder = create("Frame", {
 		Parent = self.Content,
-		BackgroundColor3 = self.Window.Theme.Control,
+		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 	})
-	applyCorner(holder, 10)
-	applyStroke(holder, self.Window.Theme.Stroke, 1, 0.2)
-	applyPadding(holder, 12, 12, 10, 10)
+	applyPadding(holder, 0, 0, 2, 2)
 	local layout = addListLayout(holder, 4)
-	createTextLabel(holder, UDim2.new(1, 0, 0, 16), UDim2.new(), title, Enum.Font.GothamSemibold, 13, self.Window.Theme.Text)
-	local body = createTextLabel(holder, UDim2.new(1, 0, 0, 0), UDim2.new(), content, Enum.Font.Gotham, 12, self.Window.Theme.SubText)
+	createTextLabel(holder, UDim2.new(1, 0, 0, 16), UDim2.new(), title, Enum.Font.GothamMedium, 12, self.Window.Theme.Text)
+	local body = createTextLabel(holder, UDim2.new(1, 0, 0, 0), UDim2.new(), content, Enum.Font.Gotham, 11, self.Window.Theme.SubText)
 	body.AutomaticSize = Enum.AutomaticSize.Y
 	body.TextWrapped = true
 	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -736,27 +843,19 @@ function Section:AddSeparator(text)
 	local holder = create("Frame", {
 		Parent = self.Content,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 18),
+		Size = UDim2.new(1, 0, 0, 20),
 	})
 	local line = create("Frame", {
 		Parent = holder,
 		BackgroundColor3 = self.Window.Theme.Stroke,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 0.5, 0),
+		Position = UDim2.new(0, 0, 1, -1),
 		AnchorPoint = Vector2.new(0, 0.5),
 		Size = UDim2.new(1, 0, 0, 1),
 	})
 	if text then
-		local chip = create("Frame", {
-			Parent = holder,
-			BackgroundColor3 = self.Window.Theme.Surface,
-			Position = UDim2.new(0, 0, 0.5, 0),
-			AnchorPoint = Vector2.new(0, 0.5),
-			Size = UDim2.new(0, 0, 1, 0),
-			AutomaticSize = Enum.AutomaticSize.X,
-		})
-		applyPadding(chip, 0, 10, 0, 0)
-		createTextLabel(chip, UDim2.new(0, 0, 1, 0), UDim2.new(), text, Enum.Font.GothamMedium, 11, self.Window.Theme.SubText)
+		local label = createTextLabel(holder, UDim2.new(0, 0, 0, 14), UDim2.new(0, 0, 0, 0), text, Enum.Font.GothamMedium, 11, self.Window.Theme.SubText)
+		label.AutomaticSize = Enum.AutomaticSize.X
 	end
 	return line
 end
@@ -802,12 +901,21 @@ function Section:AddToggle(options)
 		Key = nil,
 	}, options or {})
 
-	local row, titleLabel, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 52 or 36)
+	local row, titleLabel, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 44 or 26)
+	row.BackgroundTransparency = 1
+	for _, child in ipairs(row:GetChildren()) do
+		if child:IsA("UIStroke") then
+			child.Transparency = 1
+		end
+	end
 	titleLabel.Position = UDim2.new(0, 28, 0, 0)
-	titleLabel.Size = UDim2.new(1, -116, 0, 18)
+	titleLabel.Size = UDim2.new(1, -84, 0, 16)
+	titleLabel.Font = Enum.Font.Gotham
+	titleLabel.TextSize = 12
 	if subtitleLabel then
-		subtitleLabel.Position = UDim2.new(0, 28, 0, 18)
-		subtitleLabel.Size = UDim2.new(1, -116, 0, 16)
+		subtitleLabel.Position = UDim2.new(0, 28, 0, 14)
+		subtitleLabel.Size = UDim2.new(1, -84, 0, 14)
+		subtitleLabel.TextSize = 11
 	end
 	local toggleBox = create("TextButton", {
 		Parent = row,
@@ -818,7 +926,7 @@ function Section:AddToggle(options)
 		AutoButtonColor = false,
 		Text = "",
 	})
-	applyCorner(toggleBox, 4)
+	applyCorner(toggleBox, 3)
 	local toggleStroke = applyStroke(toggleBox, self.Window.Theme.Stroke, 1, 0.15)
 
 	local fill = create("Frame", {
@@ -834,6 +942,8 @@ function Section:AddToggle(options)
 	check.TextYAlignment = Enum.TextYAlignment.Center
 
 	local keyChip
+	local keyChipText
+	local keyListening = false
 	if config.Key then
 		keyChip = create("Frame", {
 			Parent = row,
@@ -842,8 +952,15 @@ function Section:AddToggle(options)
 			BackgroundColor3 = self.Window.Theme.ControlAlt,
 			Size = UDim2.fromOffset(24, 18),
 		})
-		applyCorner(keyChip, 7)
-		createTextLabel(keyChip, UDim2.new(1, 0, 1, 0), UDim2.new(), string.upper(config.Key), Enum.Font.GothamBold, 10, self.Window.Theme.SubText, Enum.TextXAlignment.Center)
+		applyCorner(keyChip, 5)
+		keyChip.Active = true
+		keyChipText = createTextLabel(keyChip, UDim2.new(1, 0, 1, 0), UDim2.new(), string.upper(config.Key), Enum.Font.GothamMedium, 10, self.Window.Theme.SubText, Enum.TextXAlignment.Center)
+		keyChip.InputBegan:Connect(function(input)
+			if isPrimaryInput(input) then
+				keyListening = true
+				keyChipText.Text = "..."
+			end
+		end)
 	end
 
 	local state = config.Default
@@ -888,17 +1005,24 @@ function Section:AddToggle(options)
 		end
 	end)
 
-	if boundKey then
-		UserInputService.InputBegan:Connect(function(input, gameProcessed)
-			if gameProcessed then
-				return
-			end
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then
+			return
+		end
 
-			if input.KeyCode == boundKey then
-				api:Set(not state)
+		if keyListening and input.KeyCode ~= Enum.KeyCode.Unknown then
+			boundKey = input.KeyCode
+			keyListening = false
+			if keyChipText then
+				keyChipText.Text = input.KeyCode.Name
 			end
-		end)
-	end
+			return
+		end
+
+		if boundKey and input.KeyCode == boundKey then
+			api:Set(not state)
+		end
+	end)
 
 	render()
 	return api
@@ -918,28 +1042,26 @@ function Section:AddSlider(options)
 
 	local holder = create("Frame", {
 		Parent = self.Content,
-		BackgroundColor3 = self.Window.Theme.Control,
-		Size = UDim2.new(1, 0, 0, config.Description and 76 or 60),
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, config.Description and 56 or 42),
 	})
-	applyCorner(holder, 10)
-	applyStroke(holder, self.Window.Theme.Stroke, 1, 0.2)
-	applyPadding(holder, 12, 12, 10, 12)
+	applyPadding(holder, 0, 0, 2, 4)
 
-	createTextLabel(holder, UDim2.new(1, -70, 0, 18), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.GothamMedium, self.Window.Profile.ControlText, self.Window.Theme.Text)
-	local valueLabel = createTextLabel(holder, UDim2.new(0, 64, 0, 18), UDim2.new(1, -64, 0, 0), "", Enum.Font.GothamSemibold, 13, self.Window.Theme.Text, Enum.TextXAlignment.Right)
+	createTextLabel(holder, UDim2.new(1, -70, 0, 16), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.Gotham, 12, self.Window.Theme.Text)
+	local valueLabel = createTextLabel(holder, UDim2.new(0, 64, 0, 16), UDim2.new(1, -64, 0, 0), "", Enum.Font.GothamMedium, 12, self.Window.Theme.Text, Enum.TextXAlignment.Right)
 
 	if config.Description then
 		local subtitle = createTextLabel(holder, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 0, 18), config.Description, Enum.Font.Gotham, 12, self.Window.Theme.SubText)
 		subtitle.Name = "Subtitle"
 	end
 
-	local trackY = config.Description and 48 or 34
+	local trackY = config.Description and 38 or 24
 	local track = create("Frame", {
 		Parent = holder,
 		BackgroundColor3 = self.Window.Theme.ControlAlt,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0, trackY),
-		Size = UDim2.new(1, 0, 0, 6),
+		Size = UDim2.new(1, 0, 0, 4),
 	})
 	applyCorner(track, 999)
 
@@ -957,7 +1079,7 @@ function Section:AddSlider(options)
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.fromOffset(12, 12),
+		Size = UDim2.fromOffset(10, 10),
 	})
 	applyCorner(knob, 999)
 
@@ -965,11 +1087,16 @@ function Section:AddSlider(options)
 	local currentValue = clamp(config.Default, config.Min, config.Max)
 	local api = {}
 
-	local function renderValue(fireCallback)
+	local function renderValue(fireCallback, instant)
 		local alpha = (currentValue - config.Min) / math.max(config.Max - config.Min, 0.0001)
 		valueLabel.Text = formatNumber(currentValue) .. config.Suffix
-		tween(fill, 0.07, {Size = UDim2.new(alpha, 0, 1, 0)}, Enum.EasingStyle.Quad)
-		tween(knob, 0.07, {Position = UDim2.new(alpha, 0, 0.5, 0)}, Enum.EasingStyle.Quad)
+		if instant then
+			fill.Size = UDim2.new(alpha, 0, 1, 0)
+			knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+		else
+			tween(fill, 0.10, {Size = UDim2.new(alpha, 0, 1, 0)}, Enum.EasingStyle.Quad)
+			tween(knob, 0.10, {Position = UDim2.new(alpha, 0, 0.5, 0)}, Enum.EasingStyle.Quad)
+		end
 		if fireCallback and config.Callback then
 			config.Callback(currentValue)
 		end
@@ -981,12 +1108,12 @@ function Section:AddSlider(options)
 		local alpha = clamp((positionX - absolutePosition) / math.max(absoluteSize, 1), 0, 1)
 		local nextValue = config.Min + ((config.Max - config.Min) * alpha)
 		currentValue = clamp(round(nextValue, config.Step), config.Min, config.Max)
-		renderValue(fireCallback)
+		renderValue(fireCallback, true)
 	end
 
 	function api:Set(value)
 		currentValue = clamp(round(value, config.Step), config.Min, config.Max)
-		renderValue(true)
+		renderValue(true, false)
 	end
 
 	function api:Get()
@@ -1016,7 +1143,7 @@ function Section:AddSlider(options)
 		end
 	end)
 
-	renderValue(false)
+	renderValue(false, true)
 	return api
 end
 
@@ -1031,14 +1158,9 @@ function Section:AddDropdown(options)
 
 	local holder = create("Frame", {
 		Parent = self.Content,
-		BackgroundColor3 = self.Window.Theme.Control,
-		Size = UDim2.new(1, 0, 0, 40),
-		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, config.Description and 38 or 24),
 	})
-	applyCorner(holder, 10)
-	applyStroke(holder, self.Window.Theme.Stroke, 1, 0.2)
-	applyPadding(holder, 12, 12, 10, 10)
-	local layout = addListLayout(holder, 8)
 
 	local top = create("TextButton", {
 		Parent = holder,
@@ -1048,33 +1170,46 @@ function Section:AddDropdown(options)
 		AutoButtonColor = false,
 	})
 
-	createTextLabel(top, UDim2.new(1, -70, 1, 0), UDim2.new(), config.Title, Enum.Font.GothamMedium, self.Window.Profile.ControlText, self.Window.Theme.Text)
-	local valueLabel = createTextLabel(top, UDim2.new(0, 110, 1, 0), UDim2.new(1, -128, 0, 0), config.Default or "Select", Enum.Font.Gotham, 13, self.Window.Theme.SubText, Enum.TextXAlignment.Right)
-	local chevron = createTextLabel(top, UDim2.new(0, 16, 1, 0), UDim2.new(1, -16, 0, 0), "v", Enum.Font.GothamBold, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Center)
+	createTextLabel(top, UDim2.new(1, -80, 1, 0), UDim2.new(), config.Title, Enum.Font.Gotham, 12, self.Window.Theme.Text)
+	local valueLabel = createTextLabel(top, UDim2.new(0, 110, 1, 0), UDim2.new(1, -128, 0, 0), config.Default or "Select", Enum.Font.Gotham, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Right)
+	local chevron = createTextLabel(top, UDim2.new(0, 16, 1, 0), UDim2.new(1, -16, 0, 0), ">", Enum.Font.GothamBold, 11, self.Window.Theme.SubText, Enum.TextXAlignment.Center)
 
 	if config.Description then
-		local description = createTextLabel(holder, UDim2.new(1, 0, 0, 16), UDim2.new(), config.Description, Enum.Font.Gotham, 12, self.Window.Theme.SubText)
-		description.LayoutOrder = 1
+		local description = createTextLabel(holder, UDim2.new(1, 0, 0, 14), UDim2.new(0, 0, 0, 18), config.Description, Enum.Font.Gotham, 11, self.Window.Theme.SubText)
+		description.TextWrapped = true
 	end
 
 	local list = create("Frame", {
-		Parent = holder,
+		Parent = self.Window.Overlay,
 		BackgroundColor3 = self.Window.Theme.ControlAlt,
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.fromOffset(180, 0),
 		Visible = false,
+		ZIndex = 40,
 	})
-	list.LayoutOrder = 3
 	applyCorner(list, 8)
+	applyStroke(list, self.Window.Theme.Stroke, 1, 0.15)
 	applyPadding(list, 8, 8, 8, 8)
-	local listLayout = addListLayout(list, 6)
+	local scroll = create("ScrollingFrame", {
+		Parent = list,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 1, 0),
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		ScrollBarThickness = 2,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		ZIndex = 41,
+	})
+	local listLayout = addListLayout(scroll, 4)
 
 	local expanded = false
 	local selected = config.Default
 	local api = {}
 
-	local function refreshSize()
-		holder.Size = UDim2.new(1, 0, 0, layout.AbsoluteContentSize.Y)
+	local function refreshPopupSize()
+		local itemHeight = (#config.Values * 26) + 8
+		local popupHeight = math.min(itemHeight, 150)
+		list.Size = UDim2.fromOffset(math.max(top.AbsoluteSize.X, 180), popupHeight)
+		scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
 	end
 
 	local function selectValue(value)
@@ -1088,22 +1223,28 @@ function Section:AddDropdown(options)
 	local function setExpanded(state)
 		expanded = state
 		list.Visible = state
-		chevron.Text = state and "^" or "v"
-		refreshSize()
+		chevron.Text = state and "v" or ">"
+		if state then
+			list.Position = UDim2.fromOffset(top.AbsolutePosition.X, top.AbsolutePosition.Y + top.AbsoluteSize.Y + 4)
+			refreshPopupSize()
+		end
 	end
 
 	for _, value in ipairs(config.Values) do
 		local item = create("TextButton", {
-			Parent = list,
+			Parent = scroll,
 			BackgroundColor3 = self.Window.Theme.Control,
-			Size = UDim2.new(1, 0, 0, 28),
+			Size = UDim2.new(1, 0, 0, 22),
 			Text = tostring(value),
 			Font = Enum.Font.Gotham,
-			TextSize = 13,
+			TextSize = 12,
 			TextColor3 = self.Window.Theme.Text,
 			AutoButtonColor = false,
+			ZIndex = 41,
 		})
-		applyCorner(item, 7)
+		applyCorner(item, 6)
+		item.TextXAlignment = Enum.TextXAlignment.Left
+		applyPadding(item, 8, 8, 0, 0)
 		item.MouseButton1Click:Connect(function()
 			selectValue(value)
 			setExpanded(false)
@@ -1114,9 +1255,21 @@ function Section:AddDropdown(options)
 		setExpanded(not expanded)
 	end)
 
-	listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refreshSize)
-	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refreshSize)
-	refreshSize()
+	UserInputService.InputBegan:Connect(function(input)
+		if expanded and input.UserInputType == Enum.UserInputType.MouseButton1 then
+			local position = input.Position
+			local insideX = position.X >= list.AbsolutePosition.X and position.X <= (list.AbsolutePosition.X + list.AbsoluteSize.X)
+			local insideY = position.Y >= list.AbsolutePosition.Y and position.Y <= (list.AbsolutePosition.Y + list.AbsoluteSize.Y)
+			local topX = position.X >= top.AbsolutePosition.X and position.X <= (top.AbsolutePosition.X + top.AbsoluteSize.X)
+			local topY = position.Y >= top.AbsolutePosition.Y and position.Y <= (top.AbsolutePosition.Y + top.AbsoluteSize.Y)
+			if not (insideX and insideY) and not (topX and topY) then
+				setExpanded(false)
+			end
+		end
+	end)
+
+	listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refreshPopupSize)
+	refreshPopupSize()
 
 	function api:Set(value)
 		selectValue(value)
@@ -1186,20 +1339,26 @@ function Section:AddKeybind(options)
 		Callback = nil,
 	}, options or {})
 
-	local row, _, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 54 or 40)
+	local row, _, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 44 or 26)
+	row.BackgroundTransparency = 1
+	for _, child in ipairs(row:GetChildren()) do
+		if child:IsA("UIStroke") then
+			child.Transparency = 1
+		end
+	end
 	local binder = create("TextButton", {
 		Parent = row,
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, 0, 0.5, 0),
 		BackgroundColor3 = self.Window.Theme.ControlAlt,
-		Size = UDim2.fromOffset(82, 24),
+		Size = UDim2.fromOffset(62, 20),
 		Text = config.Default.Name,
-		Font = Enum.Font.GothamSemibold,
-		TextSize = 12,
+		Font = Enum.Font.GothamMedium,
+		TextSize = 11,
 		TextColor3 = self.Window.Theme.Text,
 		AutoButtonColor = false,
 	})
-	applyCorner(binder, 7)
+	applyCorner(binder, 5)
 
 	local listening = false
 	local current = config.Default
@@ -1515,20 +1674,20 @@ function Tab:CreateSection(options)
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 	})
-	applyCorner(section.Root, 14)
+	applyCorner(section.Root, 10)
 	applyStroke(section.Root, self.Window.Theme.Stroke, 1, 0.18)
 	applyPadding(section.Root, SECTION_PADDING, SECTION_PADDING, SECTION_PADDING, SECTION_PADDING)
 
-	local layout = addListLayout(section.Root, 10)
+	local layout = addListLayout(section.Root, 8)
 
-	section.Title = createTextLabel(section.Root, UDim2.new(1, 0, 0, 18), UDim2.new(), config.Title, Enum.Font.GothamSemibold, 14, self.Window.Theme.Text)
+	section.Title = createTextLabel(section.Root, UDim2.new(1, 0, 0, 16), UDim2.new(), config.Title, Enum.Font.GothamMedium, 12, self.Window.Theme.Text)
 	section.Content = create("Frame", {
 		Parent = section.Root,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 	})
-	addListLayout(section.Content, 8)
+	addListLayout(section.Content, 6)
 
 	table.insert(self.Sections, section)
 
@@ -1567,15 +1726,15 @@ function Window:CreateTab(options)
 	tab.Button = create("TextButton", {
 		Parent = self.TabList,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 0, 0, math.max(30, self.Profile.TabHeight - 16)),
+		Size = UDim2.new(0, 0, 0, math.max(24, self.Profile.TabHeight - 14)),
 		AutomaticSize = Enum.AutomaticSize.X,
 		Text = "",
 		AutoButtonColor = false,
 	})
 	tab.ButtonStroke = applyStroke(tab.Button, self.Theme.Stroke, 1, 0.72)
-	applyPadding(tab.Button, 0, 12, 0, 0)
+	applyPadding(tab.Button, 0, 10, 0, 0)
 
-	tab.ButtonText = createTextLabel(tab.Button, UDim2.new(0, 0, 1, 0), UDim2.new(), config.Title, Enum.Font.GothamSemibold, self.Profile.ControlText, self.Theme.SubText)
+	tab.ButtonText = createTextLabel(tab.Button, UDim2.new(0, 0, 1, 0), UDim2.new(), config.Title, Enum.Font.GothamMedium, self.Profile.ControlText, self.Theme.SubText)
 	tab.ButtonText.AutomaticSize = Enum.AutomaticSize.X
 	tab.ButtonText.TextTransparency = 0
 
@@ -1590,10 +1749,10 @@ function Window:CreateTab(options)
 
 	tab.ButtonIndicator = create("Frame", {
 		Parent = tab.Button,
-		BackgroundColor3 = config.Accent,
+		BackgroundColor3 = self.Theme.Accent,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 8, 1, -2),
-		Size = UDim2.new(1, -16, 0, 2),
+		Position = UDim2.new(0, 0, 1, -2),
+		Size = UDim2.fromOffset(12, 2),
 		Visible = false,
 	})
 	applyCorner(tab.ButtonIndicator, 999)
@@ -1682,7 +1841,7 @@ function Cloudy.new(options)
 	})
 	applyCorner(self.OpenButton, 14)
 	applyStroke(self.OpenButton, Color3.fromRGB(26, 28, 38), 1, 0)
-	self.OpenButtonText = createTextLabel(self.OpenButton, UDim2.new(1, 0, 1, 0), UDim2.new(), config.Open and "Close" or "Open", Enum.Font.GothamSemibold, 14, self.Theme.Text, Enum.TextXAlignment.Center)
+	self.OpenButtonText = createTextLabel(self.OpenButton, UDim2.new(1, 0, 1, 0), UDim2.new(), config.Open and "Close" or "Open", Enum.Font.GothamMedium, 13, self.Theme.Text, Enum.TextXAlignment.Center)
 
 	self.Window = create("CanvasGroup", {
 		Parent = self.Gui,
@@ -1702,8 +1861,9 @@ function Cloudy.new(options)
 		Image = "rbxassetid://1316045217",
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(10, 10, 118, 118),
-		ImageTransparency = 0.42,
+		ImageTransparency = 1,
 		ZIndex = 0,
+		Visible = false,
 	})
 	applyCorner(self.Window, self.Profile.Corner)
 	applyStroke(self.Window, self.Theme.Stroke, 1, 0.12)
@@ -1725,8 +1885,8 @@ function Cloudy.new(options)
 	})
 	self.HeaderFill.Name = "HeaderFill"
 
-	applyPadding(self.Header, self.Profile.Padding, self.Profile.Padding, 12, 10)
-	self.TitleLabel = createTextLabel(self.Header, UDim2.new(0.5, 0, 0, 20), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.GothamBold, self.Profile.TitleText, self.Theme.Text)
+	applyPadding(self.Header, self.Profile.Padding, self.Profile.Padding, 10, 8)
+	self.TitleLabel = createTextLabel(self.Header, UDim2.new(0.5, 0, 0, 18), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.GothamMedium, self.Profile.TitleText, self.Theme.Text)
 	self.TitleLabel.AutomaticSize = Enum.AutomaticSize.X
 	self.TitleDot = create("Frame", {
 		Parent = self.Header,
@@ -1735,7 +1895,7 @@ function Cloudy.new(options)
 		Size = UDim2.fromOffset(4, 4),
 	})
 	applyCorner(self.TitleDot, 999)
-	self.SubtitleLabel = createTextLabel(self.Header, UDim2.new(0, 0, 0, 16), UDim2.new(0, 68, 0, 5), config.Subtitle, Enum.Font.GothamMedium, 12, self.Theme.SubText)
+	self.SubtitleLabel = createTextLabel(self.Header, UDim2.new(0, 0, 0, 16), UDim2.new(0, 68, 0, 3), config.Subtitle, Enum.Font.Gotham, 12, self.Theme.SubText)
 	self.SubtitleLabel.AutomaticSize = Enum.AutomaticSize.X
 
 	self.BadgeLabel = create("TextLabel", {
@@ -1744,7 +1904,7 @@ function Cloudy.new(options)
 		Size = UDim2.fromOffset(56, 18),
 		BackgroundColor3 = Color3.fromRGB(24, 16, 25),
 		Text = config.Badge,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.GothamMedium,
 		TextSize = 11,
 		TextColor3 = self.Theme.Accent,
 	})
@@ -1769,7 +1929,7 @@ function Cloudy.new(options)
 		Position = UDim2.new(0, self.Profile.Padding, 0, 5),
 		Size = UDim2.new(1, -(self.Profile.Padding * 2), 1, -10),
 	})
-	applyPadding(self.TabBarFrame, 4, 4, 6, 6)
+	applyPadding(self.TabBarFrame, 0, 0, 6, 6)
 
 	self.TabScroll = create("ScrollingFrame", {
 		Parent = self.TabBarFrame,
@@ -1806,6 +1966,7 @@ function Cloudy.new(options)
 		Size = UDim2.fromOffset(40, 2),
 	})
 	applyCorner(self.TabUnderline, 999)
+	self.TabUnderline.Visible = false
 
 	self.BodyBackground = create("Frame", {
 		Parent = self.Window,
@@ -1832,18 +1993,31 @@ function Cloudy.new(options)
 		Size = UDim2.fromOffset(6, 6),
 	})
 	applyCorner(self.FooterPresenceDot, 999)
-	self.FooterPresenceLabel = createTextLabel(self.Footer, UDim2.new(0, 120, 1, 0), UDim2.new(0, 12, 0, 0), "2075 online", Enum.Font.GothamMedium, 11, self.Theme.SubText)
-	self.FooterUrlPrefix = createTextLabel(self.Footer, UDim2.new(0, 28, 1, 0), UDim2.new(0.5, -58, 0, 0), "Url:", Enum.Font.GothamMedium, 11, self.Theme.SubText, Enum.TextXAlignment.Right)
-	self.FooterUrlPrefix.AnchorPoint = Vector2.new(0, 0)
-	self.FooterUrlText = createTextLabel(self.Footer, UDim2.new(0, 110, 1, 0), UDim2.new(0.5, -24, 0, 0), ".gg/getcloudy", Enum.Font.GothamMedium, 11, self.Theme.Text, Enum.TextXAlignment.Left)
+	self.FooterPresenceLabel = createTextLabel(self.Footer, UDim2.new(0, 120, 1, 0), UDim2.new(0, 12, 0, 0), "2075 online", Enum.Font.Gotham, 11, self.Theme.SubText)
+	self.FooterCenter = create("Frame", {
+		Parent = self.Footer,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 0),
+		Size = UDim2.fromOffset(150, 24),
+	})
+	self.FooterUrlPrefix = createTextLabel(self.FooterCenter, UDim2.new(0, 26, 1, 0), UDim2.new(0, 0, 0, 0), "Url:", Enum.Font.Gotham, 11, self.Theme.SubText, Enum.TextXAlignment.Right)
+	self.FooterUrlText = createTextLabel(self.FooterCenter, UDim2.new(0, 116, 1, 0), UDim2.new(0, 30, 0, 0), ".gg/getcloudy", Enum.Font.Gotham, 11, self.Theme.Text, Enum.TextXAlignment.Left)
 	self.FooterUpdatedPrefix = createTextLabel(self.Footer, UDim2.new(0, 58, 1, 0), UDim2.new(1, -130, 0, 0), "Updated:", Enum.Font.GothamMedium, 11, self.Theme.SubText, Enum.TextXAlignment.Right)
 	self.FooterUpdatedPrefix.AnchorPoint = Vector2.new(0, 0)
-	self.FooterUpdatedDate = createTextLabel(self.Footer, UDim2.new(0, 90, 1, 0), UDim2.new(1, -68, 0, 0), "Apr 5 2026", Enum.Font.GothamSemibold, 11, self.Theme.Accent, Enum.TextXAlignment.Left)
+	self.FooterUpdatedDate = createTextLabel(self.Footer, UDim2.new(0, 90, 1, 0), UDim2.new(1, -68, 0, 0), "Apr 5 2026", Enum.Font.GothamMedium, 11, self.Theme.Accent, Enum.TextXAlignment.Left)
 
 	self.PageHost = create("Frame", {
 		Parent = self.BodyBackground,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
+	})
+
+	self.Overlay = create("Frame", {
+		Parent = self.Gui,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 35,
 	})
 
 	self.NotificationHolder = create("Frame", {
@@ -1868,6 +2042,7 @@ function Cloudy.new(options)
 	self:SetFooterUrl(".gg/getcloudy")
 	self:SetUpdatedText("Apr 5 2026")
 	self:_enableDragging()
+	self:_enableOpenButtonDragging()
 
 	local function refreshOnViewportChange()
 		self:_updateResponsiveLayout()

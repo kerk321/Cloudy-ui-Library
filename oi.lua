@@ -158,13 +158,86 @@ local function clamp(value, minimum, maximum)
 	return math.max(minimum, math.min(maximum, value))
 end
 
+local function getViewportSize()
+	local camera = workspace.CurrentCamera
+	if camera then
+		return camera.ViewportSize
+	end
+
+	return Vector2.new(1280, 720)
+end
+
+local function getDeviceClass()
+	local viewport = getViewportSize()
+	if not UserInputService.TouchEnabled then
+		return "PC", viewport
+	end
+
+	if math.min(viewport.X, viewport.Y) <= 700 then
+		return "Phone", viewport
+	end
+
+	return "Tablet", viewport
+end
+
+local function getResponsiveMetrics(preferredWidth, preferredHeight)
+	local deviceClass, viewport = getDeviceClass()
+	local width = preferredWidth or 780
+	local height = preferredHeight or 530
+	local metrics = {
+		Device = deviceClass,
+		Viewport = viewport,
+		Width = width,
+		Height = height,
+		TopbarHeight = 58,
+		TabBarHeight = 44,
+		TitleSize = 18,
+		SubtitleSize = 11,
+		TabTextSize = 12,
+		ProfileImageSize = 56,
+		ProfileX = 18,
+		ProfileTextX = 84,
+		BottomInset = 18,
+		BarMargin = 12,
+		MinTabWidth = 88,
+		MaxTabBarWidth = 540
+	}
+
+	if deviceClass == "Phone" then
+		metrics.Width = clamp(width, 300, math.min(viewport.X - 18, 360))
+		metrics.Height = clamp(height, 380, math.min(viewport.Y - 22, 460))
+		metrics.TopbarHeight = 52
+		metrics.TabBarHeight = 40
+		metrics.TitleSize = 16
+		metrics.SubtitleSize = 10
+		metrics.TabTextSize = 11
+		metrics.ProfileImageSize = 46
+		metrics.ProfileX = 12
+		metrics.ProfileTextX = 64
+		metrics.BottomInset = 12
+		metrics.BarMargin = 8
+		metrics.MinTabWidth = 74
+		metrics.MaxTabBarWidth = metrics.Width - 12
+	elseif deviceClass == "Tablet" then
+		metrics.Width = clamp(width, 540, math.min(viewport.X - 42, 760))
+		metrics.Height = clamp(height, 420, math.min(viewport.Y - 36, 560))
+		metrics.MaxTabBarWidth = math.min(metrics.Width - 18, 560)
+	else
+		metrics.Width = clamp(width, 620, math.min(viewport.X - 80, 860))
+		metrics.Height = clamp(height, 460, math.min(viewport.Y - 70, 620))
+		metrics.MaxTabBarWidth = math.min(metrics.Width - 22, 620)
+	end
+
+	return metrics
+end
+
 local function makeDraggable(handle, target)
 	local dragging = false
 	local dragStart
 	local startPosition
 
 	handle.InputBegan:Connect(function(input)
-		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
 			return
 		end
 
@@ -184,7 +257,7 @@ local function makeDraggable(handle, target)
 			return
 		end
 
-		if input.UserInputType ~= Enum.UserInputType.MouseMovement then
+		if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
 			return
 		end
 
@@ -206,7 +279,7 @@ local function bindDrag(object, onChanged)
 	end
 
 	object.InputBegan:Connect(function(input)
-		if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
 			return
 		end
 
@@ -215,7 +288,7 @@ local function bindDrag(object, onChanged)
 	end)
 
 	object.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = false
 		end
 	end)
@@ -225,7 +298,7 @@ local function bindDrag(object, onChanged)
 			return
 		end
 
-		if input.UserInputType ~= Enum.UserInputType.MouseMovement then
+		if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
 			return
 		end
 
@@ -353,6 +426,54 @@ function Window:SetTitle(text)
 	self.TitleLabel.Text = tostring(text or "Cloudy")
 end
 
+function Window:RefreshTabButtons()
+	local count = #self.Tabs
+	if count == 0 or not self.TabButtonHolder then
+		return
+	end
+
+	local holderWidth = math.max(self.TabButtonHolder.AbsoluteSize.X, 1)
+	local padding = self.TabListLayout and self.TabListLayout.Padding.Offset or 8
+	local totalPadding = math.max(0, (count - 1) * padding)
+	local width = math.floor((holderWidth - totalPadding) / count)
+	local buttonWidth = math.max(self.MinTabWidth or 88, width)
+	local canvasWidth = buttonWidth * count + totalPadding
+
+	for _, tab in ipairs(self.Tabs) do
+		tab.Button.Size = UDim2.fromOffset(buttonWidth, self.TabBarHeight - 12)
+		tab.Button.TextSize = self.TabTextSize or 12
+	end
+
+	self.TabButtonHolder.CanvasSize = UDim2.fromOffset(canvasWidth, 0)
+end
+
+function Window:ApplyResponsiveLayout()
+	local metrics = getResponsiveMetrics(self.PreferredWidth, self.PreferredHeight)
+	self.Metrics = metrics
+	self.TabBarHeight = metrics.TabBarHeight
+	self.MinTabWidth = metrics.MinTabWidth
+	self.TabTextSize = metrics.TabTextSize
+
+	self.Frame.Size = UDim2.fromOffset(metrics.Width, metrics.Height)
+	self.Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	self.TopBar.Size = UDim2.new(1, 0, 0, metrics.TopbarHeight)
+	self.ContentFrame.Position = UDim2.fromOffset(0, metrics.TopbarHeight + 12)
+	self.ContentFrame.Size = UDim2.new(1, 0, 1, -(metrics.TopbarHeight + metrics.TabBarHeight + 24))
+	self.TitleLabel.TextSize = metrics.TitleSize
+	self.SubtitleLabel.TextSize = metrics.SubtitleSize
+	self.TabBar.Size = UDim2.fromOffset(math.min(metrics.MaxTabBarWidth, metrics.Width - (metrics.BarMargin * 2)), metrics.TabBarHeight)
+	self.TabBar.Position = UDim2.new(0.5, 0, 1, -metrics.BarMargin)
+	self.ProfileImage.Position = UDim2.new(0, metrics.ProfileX, 1, -(metrics.ProfileImageSize + metrics.BottomInset + 6))
+	self.ProfileImage.Size = UDim2.fromOffset(metrics.ProfileImageSize, metrics.ProfileImageSize)
+	self.DisplayNameLabel.Position = UDim2.new(0, metrics.ProfileTextX, 1, -(metrics.BottomInset + 26))
+	self.DisplayNameLabel.Size = UDim2.fromOffset(math.min(220, metrics.Width - metrics.ProfileTextX - 16), 18)
+	self.DisplayNameLabel.TextSize = metrics.Device == "Phone" and 12 or 13
+	self.UsernameLabel.Position = UDim2.new(0, metrics.ProfileTextX, 1, -(metrics.BottomInset + 8))
+	self.UsernameLabel.Size = UDim2.fromOffset(math.min(220, metrics.Width - metrics.ProfileTextX - 16), 14)
+	self.UsernameLabel.TextSize = metrics.Device == "Phone" and 10 or 11
+	self:RefreshTabButtons()
+end
+
 function Window:SelectTab(tabObject)
 	for _, tab in ipairs(self.Tabs) do
 		local selected = tab == tabObject
@@ -364,6 +485,21 @@ function Window:SelectTab(tabObject)
 end
 
 function Window:Destroy()
+	if self.ViewportConnection then
+		self.ViewportConnection:Disconnect()
+		self.ViewportConnection = nil
+	end
+
+	if self.CameraSwapConnection then
+		self.CameraSwapConnection:Disconnect()
+		self.CameraSwapConnection = nil
+	end
+
+	if self.TabResizeConnection then
+		self.TabResizeConnection:Disconnect()
+		self.TabResizeConnection = nil
+	end
+
 	if self.Screen then
 		self.Screen:Destroy()
 		self.Screen = nil
@@ -380,10 +516,11 @@ function Window:AddTab(options)
 		BorderSizePixel = 1,
 		Font = Enum.Font.GothamBold,
 		Name = tostring(options.Title or "Tab") .. "Button",
-		Size = UDim2.fromOffset(options.Width or 112, 30),
+		Size = UDim2.fromOffset(options.Width or 112, (self.TabBarHeight or 44) - 12),
 		Text = tostring(options.Title or "Tab"),
 		TextColor3 = self.Theme.Muted,
-		TextSize = 12,
+		TextSize = self.TabTextSize or 12,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = self.TabButtonHolder
 	})
 
@@ -467,6 +604,8 @@ function Window:AddTab(options)
 	if #self.Tabs == 1 then
 		self:SelectTab(tabObject)
 	end
+
+	self:RefreshTabButtons()
 
 	return tabObject
 end
@@ -1668,6 +1807,7 @@ end
 function CloudyUI:CreateWindow(options)
 	options = normalizeOptions(options, "Title")
 	destroyExisting()
+	local metrics = getResponsiveMetrics(options.Width, options.Height)
 
 	local screen = protectGui(create("ScreenGui", {
 		DisplayOrder = 100,
@@ -1741,7 +1881,7 @@ function CloudyUI:CreateWindow(options)
 		BorderColor3 = self.Theme.Border,
 		BorderSizePixel = 1,
 		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.fromOffset(options.Width or 780, options.Height or 530),
+		Size = UDim2.fromOffset(metrics.Width, metrics.Height),
 		Parent = screen
 	})
 
@@ -1758,7 +1898,7 @@ function CloudyUI:CreateWindow(options)
 		BackgroundColor3 = self.Theme.Panel,
 		BorderColor3 = self.Theme.BorderSoft,
 		BorderSizePixel = 1,
-		Size = UDim2.new(1, 0, 0, 58),
+		Size = UDim2.new(1, 0, 0, metrics.TopbarHeight),
 		Parent = frame
 	})
 
@@ -1770,7 +1910,7 @@ function CloudyUI:CreateWindow(options)
 		Size = UDim2.new(1, -32, 0, 18),
 		Text = tostring(options.Title or "Cloudy UI"),
 		TextColor3 = self.Theme.Text,
-		TextSize = 18,
+		TextSize = metrics.TitleSize,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = topBar
 	})
@@ -1783,7 +1923,7 @@ function CloudyUI:CreateWindow(options)
 		Size = UDim2.new(1, -32, 0, 14),
 		Text = tostring(options.Subtitle or "Dark utility library"),
 		TextColor3 = self.Theme.Muted,
-		TextSize = 11,
+		TextSize = metrics.SubtitleSize,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = topBar
 	})
@@ -1791,8 +1931,8 @@ function CloudyUI:CreateWindow(options)
 	local contentFrame = create("Frame", {
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.fromOffset(0, 70),
-		Size = UDim2.new(1, 0, 1, -126),
+		Position = UDim2.fromOffset(0, metrics.TopbarHeight + 12),
+		Size = UDim2.new(1, 0, 1, -(metrics.TopbarHeight + metrics.TabBarHeight + 24)),
 		Parent = frame
 	})
 
@@ -1808,20 +1948,25 @@ function CloudyUI:CreateWindow(options)
 		BackgroundColor3 = self.Theme.Panel,
 		BorderColor3 = self.Theme.Border,
 		BorderSizePixel = 1,
-		Position = UDim2.new(0.5, 0, 1, -12),
-		Size = UDim2.new(0, 460, 0, 44),
+		Position = UDim2.new(0.5, 0, 1, -metrics.BarMargin),
+		Size = UDim2.fromOffset(math.min(metrics.MaxTabBarWidth, metrics.Width - (metrics.BarMargin * 2)), metrics.TabBarHeight),
 		Parent = frame
 	})
 
-	local tabButtonHolder = create("Frame", {
+	local tabButtonHolder = create("ScrollingFrame", {
+		Active = true,
+		CanvasSize = UDim2.new(),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
+		ScrollBarImageColor3 = self.Theme.Border,
+		ScrollBarThickness = 0,
 		Size = UDim2.new(1, -12, 1, -12),
 		Position = UDim2.fromOffset(6, 6),
+		ScrollingDirection = Enum.ScrollingDirection.X,
 		Parent = tabBar
 	})
 
-	create("UIListLayout", {
+	local tabListLayout = create("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		Padding = UDim.new(0, 8),
@@ -1837,16 +1982,51 @@ function CloudyUI:CreateWindow(options)
 		Screen = screen,
 		Frame = frame,
 		TopBar = topBar,
+		ContentFrame = contentFrame,
 		TitleLabel = title,
 		SubtitleLabel = subtitle,
 		Launcher = launcher,
 		ProfileFolder = profileFolder,
+		ProfileImage = profileImage,
+		DisplayNameLabel = displayName,
+		UsernameLabel = username,
 		PageHolder = pageHolder,
+		TabBar = tabBar,
 		TabButtonHolder = tabButtonHolder,
+		TabListLayout = tabListLayout,
+		PreferredWidth = options.Width or 780,
+		PreferredHeight = options.Height or 530,
+		TabBarHeight = metrics.TabBarHeight,
+		MinTabWidth = metrics.MinTabWidth,
+		TabTextSize = metrics.TabTextSize,
 		Tabs = {},
 		Popups = {},
 		Visible = true
 	}, Window)
+
+	window:ApplyResponsiveLayout()
+	window.TabResizeConnection = tabButtonHolder:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		window:RefreshTabButtons()
+	end)
+
+	local function hookViewport(camera)
+		if window.ViewportConnection then
+			window.ViewportConnection:Disconnect()
+			window.ViewportConnection = nil
+		end
+
+		if camera then
+			window.ViewportConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+				window:ApplyResponsiveLayout()
+			end)
+		end
+	end
+
+	hookViewport(workspace.CurrentCamera)
+	window.CameraSwapConnection = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		hookViewport(workspace.CurrentCamera)
+		window:ApplyResponsiveLayout()
+	end)
 
 	launcher.MouseButton1Click:Connect(function()
 		window:Toggle()

@@ -380,7 +380,7 @@ local Library do
         }
     }
 
-    Library.Theme = TableClone(Themes["Default"])
+    Library.Theme = TableClone(Themes["Aqua"])
     Library.Themes = Themes
 
     local Tween = { } do
@@ -821,26 +821,26 @@ local Library do
         }
 
         if DeviceType == "Phone" then
-            Metrics.Width = math.clamp(Width, 300, math.min(ViewportSize.X - 20, 380))
-            Metrics.Height = math.clamp(Height, 360, math.min(ViewportSize.Y - 20, 520))
-            Metrics.TitleWidth = Metrics.Width - 26
-            Metrics.HeaderHeight = 34
+            Metrics.Width = math.clamp(Width, 320, math.min(ViewportSize.X - 16, 420))
+            Metrics.Height = math.clamp(Height, 400, math.min(ViewportSize.Y - 16, 620))
+            Metrics.TitleWidth = Metrics.Width - 32
+            Metrics.HeaderHeight = 38
             Metrics.HeaderTop = 42
-            Metrics.ContentTop = 86
-            Metrics.ContentBottom = 102
-            Metrics.SidePadding = 13
-            Metrics.TabGap = 6
-            Metrics.TabButtonWidth = 84
-            Metrics.TabButtonHeight = 22
-            Metrics.DropdownHeight = 24
-            Metrics.DropdownMaxSize = 164
-            Metrics.DropdownOptionHeight = 22
+            Metrics.ContentTop = 90
+            Metrics.ContentBottom = 110
+            Metrics.SidePadding = 12
+            Metrics.TabGap = 8
+            Metrics.TabButtonWidth = 96
+            Metrics.TabButtonHeight = 24
+            Metrics.DropdownHeight = 26
+            Metrics.DropdownMaxSize = 180
+            Metrics.DropdownOptionHeight = 24
         elseif DeviceType == "Tablet" then
             Metrics.Width = math.clamp(Width, 500, math.min(ViewportSize.X - 42, 720))
             Metrics.Height = math.clamp(Height, 420, math.min(ViewportSize.Y - 40, 600))
             Metrics.TitleWidth = 150
             Metrics.TabButtonWidth = 92
-            Metrics.TabButtonHeight = 22
+            Metrics.TabButtonHeight = 24
             Metrics.DropdownMaxSize = 140
             Metrics.DropdownOptionHeight = 18
         else
@@ -848,7 +848,7 @@ local Library do
             Metrics.Height = math.clamp(Height, 460, math.min(ViewportSize.Y - 70, 640))
             Metrics.TitleWidth = 148
             Metrics.TabButtonWidth = 92
-            Metrics.TabButtonHeight = 22
+            Metrics.TabButtonHeight = 24
             Metrics.DropdownMaxSize = 130
             Metrics.DropdownOptionHeight = 16
         end
@@ -1570,6 +1570,11 @@ local Library do
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border
                 }):AddToTheme({Color = "Border"})
 
+                Instances:Create("UICorner", {
+                    Parent = Items["Outline"].Instance,
+                    CornerRadius = UDim.new(0, 12)
+                })
+
                 Items["Inline"] = Instances:Create("Frame", {
                     Parent = Items["Outline"].Instance,
                     Name = "\0",
@@ -1585,6 +1590,11 @@ local Library do
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                     LineJoinMode = Enum.LineJoinMode.Miter
                 }):AddToTheme({Color = "Outline"})
+
+                Instances:Create("UICorner", {
+                    Parent = Items["Inline"].Instance,
+                    CornerRadius = UDim.new(0, 10)
+                })
 
                 Items["Liner"] = Instances:Create("Frame", {
                     Parent = Items["Inline"].Instance,
@@ -4401,7 +4411,7 @@ local Library do
             Parent = self.Holder,
             Draggable = true
         }) do 
-            Items["OpenButton"] = Instances:Create("TextButton", {
+            Items["OpenButton"] = Instances:Create("ImageButton", {
                 Parent = self.Holder.Instance,
                 AnchorPoint = Vector2New(1, 1),
                 AutoButtonColor = false,
@@ -4411,12 +4421,11 @@ local Library do
                 BorderColor3 = FromRGB(0, 0, 0),
                 BorderSizePixel = 2,
                 BackgroundColor3 = FromRGB(13, 13, 13),
-                Text = "UI",
-                TextColor3 = FromRGB(180, 180, 180),
-                FontFace = Library.Font,
-                TextSize = Metrics.DeviceType == "Phone" and 14 or 12,
+                Image = "rbxassetid://77380393395155",
+                ImageColor3 = FromRGB(180, 180, 180),
+                ScaleType = Enum.ScaleType.Fit,
                 Visible = true
-            })  Items["OpenButton"]:AddToTheme({BackgroundColor3 = "Inline", BorderColor3 = "Outline", TextColor3 = "Text"})
+            })  Items["OpenButton"]:AddToTheme({BackgroundColor3 = "Inline", BorderColor3 = "Outline", ImageColor3 = "Text"})
 
             Instances:Create("UIStroke", {
                 Parent = Items["OpenButton"].Instance,
@@ -4424,6 +4433,11 @@ local Library do
                 LineJoinMode = Enum.LineJoinMode.Miter,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             }):AddToTheme({Color = "Border"})
+
+            Instances:Create("UICorner", {
+                Parent = Items["OpenButton"].Instance,
+                CornerRadius = UDim.new(0, 12)
+            })
 
             Items["Text"] = Instances:Create("TextLabel", {
                 Parent = Items["Inline"].Instance,
@@ -4531,11 +4545,11 @@ local Library do
 
             Items["Outline"].Instance.Visible = Bool
             if Bool then
-                Items["OpenButton"]:ChangeItemTheme({TextColor3 = "Accent"})
-                Items["OpenButton"]:Tween(nil, {TextColor3 = Library.Theme.Accent})
+                Items["OpenButton"]:ChangeItemTheme({ImageColor3 = "Accent"})
+                Items["OpenButton"]:Tween(nil, {ImageColor3 = Library.Theme.Accent})
             else
-                Items["OpenButton"]:ChangeItemTheme({TextColor3 = "Text"})
-                Items["OpenButton"]:Tween(nil, {TextColor3 = Library.Theme.Text})
+                Items["OpenButton"]:ChangeItemTheme({ImageColor3 = "Text"})
+                Items["OpenButton"]:Tween(nil, {ImageColor3 = Library.Theme.Text})
             end
         end
 

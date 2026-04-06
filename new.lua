@@ -35,6 +35,10 @@ local DEFAULTS = {
 	Badge = "stable",
 	Accent = Cloudy.Theme.Accent,
 	Open = true,
+	ToggleKeybind = Enum.KeyCode.RightShift,
+	ShowDesktopOpenButton = false,
+	ShowMobileOpenButton = true,
+	ConfigFolder = "Cloudy/configs",
 }
 
 local CONTROL_HEIGHT = 38
@@ -288,7 +292,7 @@ local function rgbToHex(color)
 	return string.format("#%02X%02X%02X", r, g, b)
 end
 
-local function httpGet(url)
+local function httpRequest(method, url, body, headers)
 	local providers = {}
 
 	if syn and syn.request then
@@ -305,7 +309,9 @@ local function httpGet(url)
 		local success, response = pcall(function()
 			return provider({
 				Url = url,
-				Method = "GET",
+				Method = method,
+				Headers = headers,
+				Body = body,
 			})
 		end)
 
@@ -314,15 +320,26 @@ local function httpGet(url)
 		end
 	end
 
-	local success, body = pcall(function()
-		return HttpService:GetAsync(url)
-	end)
+	local success, fallbackBody
+	if method == "GET" then
+		success, fallbackBody = pcall(function()
+			return HttpService:GetAsync(url)
+		end)
+	elseif method == "POST" then
+		success, fallbackBody = pcall(function()
+			return HttpService:PostAsync(url, body or "", Enum.HttpContentType.ApplicationJson)
+		end)
+	end
 
 	if success then
-		return body
+		return fallbackBody
 	end
 
 	return nil
+end
+
+local function httpGet(url)
+	return httpRequest("GET", url, nil, nil)
 end
 
 local function resolveKeyCode(value)
@@ -335,6 +352,60 @@ local function resolveKeyCode(value)
 	end
 
 	return nil
+end
+
+local function sanitizeFlag(text)
+	local value = string.lower(tostring(text or "value"))
+	value = value:gsub("[^%w_]+", "_")
+	value = value:gsub("_+", "_")
+	value = value:gsub("^_", "")
+	value = value:gsub("_$", "")
+	return value ~= "" and value or "value"
+end
+
+local function hasFileApi()
+	return type(writefile) == "function" and type(readfile) == "function" and type(isfile) == "function"
+end
+
+local function ensureFolder(path)
+	if type(isfolder) == "function" and isfolder(path) then
+		return true
+	end
+	if type(makefolder) == "function" then
+		pcall(makefolder, path)
+		return true
+	end
+	return false
+end
+
+local function listConfigFiles(path)
+	if type(listfiles) ~= "function" then
+		return {}
+	end
+	local success, files = pcall(listfiles, path)
+	if not success or type(files) ~= "table" then
+		return {}
+	end
+	return files
+end
+
+local function getSharedStore()
+	if type(getgenv) == "function" then
+		local env = getgenv()
+		env.CloudyRuntimeStore = env.CloudyRuntimeStore or {}
+		return env.CloudyRuntimeStore
+	end
+
+	shared.CloudyRuntimeStore = shared.CloudyRuntimeStore or {}
+	return shared.CloudyRuntimeStore
+end
+
+local function getConfigBucket(path)
+	local store = getSharedStore()
+	local key = sanitizeFlag(path)
+	store.Configs = store.Configs or {}
+	store.Configs[key] = store.Configs[key] or {}
+	return store.Configs[key]
 end
 
 local Window = {}
@@ -370,6 +441,13 @@ local function makeInteractiveRow(section, title, subtitle, height)
 	return row, titleLabel, subtitleLabel
 end
 
+local function resolveControlFlag(section, config)
+	if config.Flag and config.Flag ~= "" then
+		return sanitizeFlag(config.Flag)
+	end
+	return section.Window:_makeAutoFlag(section.Tab.TitleText or "tab", section.TitleText or "section", config.Title or "value")
+end
+
 local function updateCanvas(tab)
 	local leftHeight = tab.LeftLayout.AbsoluteContentSize.Y
 	local rightHeight = tab.RightLayout.AbsoluteContentSize.Y
@@ -382,10 +460,13 @@ function Window:_applyTheme()
 	self.Window.BackgroundColor3 = self.Theme.Surface
 	self.Header.BackgroundColor3 = self.Theme.SurfaceAlt
 	self.HeaderFill.BackgroundColor3 = self.Theme.SurfaceAlt
-	self.TabBar.BackgroundColor3 = self.Theme.SurfaceAlt
-	self.TabBarFrame.BackgroundColor3 = self.Theme.SurfaceAlt
+	self.HeaderDivider.BackgroundColor3 = self.Theme.Stroke
+	self.TabBar.BackgroundColor3 = self.Theme.Background
+	self.TabBarFrame.BackgroundColor3 = self.Theme.Background
+	self.TabDivider.BackgroundColor3 = self.Theme.Stroke
 	self.TabUnderline.BackgroundColor3 = self.Theme.Accent
 	self.BodyBackground.BackgroundColor3 = self.Theme.Background
+	self.SnowLayer.BackgroundTransparency = 1
 	self.OpenButton.BackgroundColor3 = Color3.fromRGB(7, 8, 12)
 	self.OpenButtonText.TextColor3 = self.Theme.Text
 	self.TitleLabel.TextColor3 = self.Theme.Accent
@@ -419,18 +500,15 @@ end
 function Window:_updateTabStyles()
 	for _, tab in ipairs(self.Tabs) do
 		local selected = self.ActiveTab == tab
-		tab.Button.BackgroundTransparency = 1
+		tab.Button.BackgroundColor3 = selected and self.Theme.TabActive or self.Theme.TabIdle
+		tab.Button.BackgroundTransparency = 0
 		tab.ButtonText.TextColor3 = selected and self.Theme.Text or self.Theme.SubText
 		tab.ButtonIndicator.BackgroundColor3 = self.Theme.Accent
-		tab.ButtonIndicator.Visible = selected
-		tab.ButtonIndicator.BackgroundTransparency = selected and 0 or 1
-		tab.ButtonStroke.Transparency = 1
+		tab.ButtonIndicator.Visible = false
+		tab.ButtonStroke.Color = selected and self.Theme.Accent or self.Theme.Stroke
+		tab.ButtonStroke.Transparency = selected and 0.22 or 0.52
 		tab.Page.Visible = selected
 		tab.AccentDot.Visible = false
-		if selected then
-			tab.ButtonIndicator.Size = UDim2.fromOffset(tab.ButtonText.TextBounds.X, 2)
-			tab.ButtonIndicator.Position = UDim2.new(0, 0, 1, -2)
-		end
 	end
 
 	self.TabUnderline.Visible = false
@@ -448,22 +526,28 @@ function Window:_updateResponsiveLayout()
 
 	self.OpenButton.Size = UDim2.fromOffset(self.Profile.OpenButtonWidth, self.Profile.OpenButtonHeight)
 	if not self.OpenButtonDragged then
-		self.OpenButton.Position = UDim2.new(1, -(self.Profile.Padding + 28), 0, self.Profile.Padding + GuiService:GetGuiInset().Y + 12)
+		self.OpenButton.Position = UDim2.new(1, -(self.Profile.OpenButtonWidth + self.Profile.Padding + 12), 0, self.Profile.Padding + GuiService:GetGuiInset().Y + 14)
 	end
+	self:_updateOpenButtonVisibility()
 
 	self.Header.Size = UDim2.new(1, 0, 0, self.Profile.HeaderHeight)
+	self.HeaderDivider.Position = UDim2.new(0, self.Profile.Padding, 1, -1)
+	self.HeaderDivider.Size = UDim2.new(1, -(self.Profile.Padding * 2), 0, 1)
+	self.TabBar.Position = UDim2.new(0, 0, 0, self.Profile.HeaderHeight + 2)
 	self.TabBar.Size = UDim2.new(1, 0, 0, self.Profile.TabHeight)
+	self.TabDivider.Position = UDim2.new(0, self.Profile.Padding, 1, 0)
+	self.TabDivider.Size = UDim2.new(1, -(self.Profile.Padding * 2), 0, 1)
 	self.Footer.Size = UDim2.new(1, 0, 0, 24)
 	self.Footer.Position = UDim2.new(0, 0, 1, -24)
-	self.BodyBackground.Position = UDim2.new(0, 0, 0, self.Profile.HeaderHeight + self.Profile.TabHeight)
-	self.BodyBackground.Size = UDim2.new(1, 0, 1, -(self.Profile.HeaderHeight + self.Profile.TabHeight + 24))
+	self.BodyBackground.Position = UDim2.new(0, 0, 0, self.Profile.HeaderHeight + self.Profile.TabHeight + 3)
+	self.BodyBackground.Size = UDim2.new(1, 0, 1, -(self.Profile.HeaderHeight + self.Profile.TabHeight + 27))
 
 	self.TitleLabel.TextSize = self.Profile.TitleText
-	self.SubtitleLabel.TextSize = math.max(11, self.Profile.TitleText - 8)
+	self.SubtitleLabel.TextSize = 11
 	self.BadgeLabel.TextSize = 11
 	self.OpenButtonText.TextSize = 13
-	self.TabBarFrame.Size = UDim2.new(1, -(self.Profile.Padding * 2), 1, -10)
-	self.TabBarFrame.Position = UDim2.new(0, self.Profile.Padding, 0, 5)
+	self.TabBarFrame.Size = UDim2.new(1, -(self.Profile.Padding * 2), 1, -8)
+	self.TabBarFrame.Position = UDim2.new(0, self.Profile.Padding, 0, 4)
 	self.UsernameLabel.Position = UDim2.new(1, -self.Profile.Padding, 0, 12)
 	self:_layoutHeader()
 
@@ -491,6 +575,137 @@ function Window:SetTheme(theme)
 		tab:ApplyTheme()
 	end
 	self:_updateTabStyles()
+end
+
+function Window:_makeAutoFlag(tabTitle, sectionTitle, itemTitle)
+	self._autoFlagIndex = (self._autoFlagIndex or 0) + 1
+	return table.concat({
+		sanitizeFlag(tabTitle),
+		sanitizeFlag(sectionTitle),
+		sanitizeFlag(itemTitle),
+		tostring(self._autoFlagIndex),
+	}, "_")
+end
+
+function Window:RegisterFlag(flag, getter, setter)
+	if not flag or flag == "" then
+		return
+	end
+	self.FlagRegistry[flag] = {
+		Get = getter,
+		Set = setter,
+	}
+end
+
+function Window:GetConfigData()
+	local data = {}
+	for flag, entry in pairs(self.FlagRegistry) do
+		if entry.Get then
+			data[flag] = entry.Get()
+		end
+	end
+	return data
+end
+
+function Window:SaveConfig(name)
+	local configName = sanitizeFlag(name)
+	local payloadTable = self:GetConfigData()
+	getConfigBucket(self.ConfigFolder)[configName] = deepCopy(payloadTable)
+
+	if hasFileApi() then
+		ensureFolder(self.ConfigFolder)
+		local path = self.ConfigFolder .. "/" .. configName .. ".json"
+		local payload = HttpService:JSONEncode(payloadTable)
+		local success = pcall(writefile, path, payload)
+		if success then
+			return true, path
+		end
+	end
+
+	return true, "memory"
+end
+
+function Window:LoadConfig(name)
+	local configName = sanitizeFlag(name)
+	local decoded
+	local source = "memory"
+
+	if hasFileApi() then
+		local path = self.ConfigFolder .. "/" .. configName .. ".json"
+		if isfile(path) then
+			local success, fileDecoded = pcall(function()
+				return HttpService:JSONDecode(readfile(path))
+			end)
+			if success and type(fileDecoded) == "table" then
+				decoded = fileDecoded
+				source = path
+			end
+		end
+	end
+
+	if type(decoded) ~= "table" then
+		decoded = getConfigBucket(self.ConfigFolder)[configName]
+	end
+
+	if type(decoded) ~= "table" then
+		return false, "Missing config"
+	end
+
+	for flag, value in pairs(decoded) do
+		local entry = self.FlagRegistry[flag]
+		if entry and entry.Set then
+			entry.Set(value)
+		end
+	end
+	return true, source
+end
+
+function Window:ListConfigs()
+	local configs = {}
+	local seen = {}
+	for name in pairs(getConfigBucket(self.ConfigFolder)) do
+		seen[name] = true
+		table.insert(configs, name)
+	end
+	for _, file in ipairs(listConfigFiles(self.ConfigFolder)) do
+		local name = file:match("([^/\\]+)%.json$")
+		if name and not seen[name] then
+			seen[name] = true
+			table.insert(configs, name)
+		end
+	end
+	table.sort(configs)
+	return configs
+end
+
+function Window:SetToggleKeybind(keyCode)
+	local resolved = resolveKeyCode(keyCode) or Enum.KeyCode.RightShift
+	self.ToggleKeybind = resolved
+	return resolved
+end
+
+function Window:SetDesktopOpenButtonVisible(state)
+	self.ShowDesktopOpenButton = state and true or false
+	self:_updateOpenButtonVisibility()
+	return self.ShowDesktopOpenButton
+end
+
+function Window:SetMobileOpenButtonVisible(state)
+	self.ShowMobileOpenButton = state ~= false
+	self:_updateOpenButtonVisibility()
+	return self.ShowMobileOpenButton
+end
+
+function Window:_shouldShowOpenButton()
+	local isDesktop = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
+	if isDesktop then
+		return self.ShowDesktopOpenButton
+	end
+	return self.ShowMobileOpenButton
+end
+
+function Window:_updateOpenButtonVisibility()
+	self.OpenButton.Visible = self:_shouldShowOpenButton()
 end
 
 function Window:SetTitle(title)
@@ -548,6 +763,46 @@ function Window:BindPresenceEndpoint(options)
 	end)
 end
 
+function Window:StartPresenceTracking(options)
+	local config = options or {}
+	if not config.HeartbeatUrl or config.HeartbeatUrl == "" then
+		return
+	end
+
+	self.PresenceSessionId = self.PresenceSessionId or HttpService:GenerateGUID(false)
+	self.PresenceHeartbeatUrl = config.HeartbeatUrl
+	self.PresenceScriptId = config.ScriptId or "cloudy"
+	self.PresenceInterval = config.Interval or 20
+
+	if config.OnlineUrl then
+		self:BindPresenceEndpoint({
+			Url = config.OnlineUrl,
+			Interval = config.Interval or 20,
+			Parser = config.Parser,
+		})
+	end
+
+	task.spawn(function()
+		while self.Gui.Parent and self.PresenceHeartbeatUrl == config.HeartbeatUrl do
+			local payload = HttpService:JSONEncode({
+				script_id = self.PresenceScriptId,
+				session_id = self.PresenceSessionId,
+				user_id = LocalPlayer and LocalPlayer.UserId or 0,
+				username = LocalPlayer and LocalPlayer.Name or "Unknown",
+				place_id = game.PlaceId,
+				job_id = game.JobId,
+				timestamp = os.time(),
+			})
+
+			httpRequest("POST", config.HeartbeatUrl, payload, {
+				["Content-Type"] = "application/json",
+			})
+
+			task.wait(self.PresenceInterval)
+		end
+	end)
+end
+
 function Window:SetFooterUrl(value)
 	self.FooterUrlText.Text = value
 end
@@ -564,19 +819,27 @@ end
 
 function Window:SetOpen(isOpen)
 	self.IsOpen = isOpen
+	self:_updateOpenButtonVisibility()
 
 	if isOpen then
 		self.Window.Visible = true
 		self.WindowShadow.Visible = false
 		self.Window.GroupTransparency = 1
+		self.WindowScale.Scale = 0.985
 		self.Window.Position = UDim2.new(0.5, 0, 0.53, 0)
 		tween(self.Window, 0.22, {
 			GroupTransparency = 0,
 			Position = UDim2.new(0.5, 0, 0.5, 0),
 		})
+		tween(self.WindowScale, 0.22, {
+			Scale = 1,
+		}, Enum.EasingStyle.Quart)
 		self.OpenButtonText.Text = "Close"
 	else
 		self.OpenButtonText.Text = "Open"
+		tween(self.WindowScale, 0.16, {
+			Scale = 0.985,
+		}, Enum.EasingStyle.Quad)
 		local animation = tween(self.Window, 0.18, {
 			GroupTransparency = 1,
 			Position = UDim2.new(0.5, 0, 0.53, 0),
@@ -722,6 +985,34 @@ function Window:_enableOpenButtonDragging()
 			startOffset.Y.Offset + delta.Y
 		)
 	end)
+end
+
+function Window:_startSnow()
+	for index = 1, 18 do
+		local flake = create("Frame", {
+			Parent = self.SnowLayer,
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BorderSizePixel = 0,
+			Size = UDim2.fromOffset(math.random(1, 3), math.random(1, 3)),
+			Position = UDim2.new(math.random(), 0, math.random(), 0),
+			BackgroundTransparency = math.random(70, 88) / 100,
+			ZIndex = 1,
+		})
+		applyCorner(flake, 999)
+
+		task.spawn(function()
+			while flake.Parent do
+				flake.Position = UDim2.new(math.random(), 0, -0.1, 0)
+				flake.BackgroundTransparency = math.random(72, 90) / 100
+				local drift = math.random(-24, 24)
+				local duration = math.random(14, 24) / 2
+				tween(flake, duration, {
+					Position = UDim2.new(flake.Position.X.Scale, drift, 1.1, 0),
+				}, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+				task.wait(duration)
+			end
+		end)
+	end
 end
 
 function Tab:ApplyTheme()
@@ -899,7 +1190,9 @@ function Section:AddToggle(options)
 		Default = false,
 		Callback = nil,
 		Key = nil,
+		Color = nil,
 	}, options or {})
+	local flag = resolveControlFlag(self, config)
 
 	local row, titleLabel, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 44 or 26)
 	row.BackgroundTransparency = 1
@@ -909,12 +1202,13 @@ function Section:AddToggle(options)
 		end
 	end
 	titleLabel.Position = UDim2.new(0, 28, 0, 0)
-	titleLabel.Size = UDim2.new(1, -84, 0, 16)
+	titleLabel.Size = UDim2.new(1, -136, 0, 16)
 	titleLabel.Font = Enum.Font.Gotham
 	titleLabel.TextSize = 12
+	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 	if subtitleLabel then
 		subtitleLabel.Position = UDim2.new(0, 28, 0, 14)
-		subtitleLabel.Size = UDim2.new(1, -84, 0, 14)
+		subtitleLabel.Size = UDim2.new(1, -136, 0, 14)
 		subtitleLabel.TextSize = 11
 	end
 	local toggleBox = create("TextButton", {
@@ -944,6 +1238,13 @@ function Section:AddToggle(options)
 	local keyChip
 	local keyChipText
 	local keyListening = false
+	local colorChip
+	local colorPopup
+	local colorExpanded = false
+	local currentColor = config.Color and (config.Color.Default or config.Color) or nil
+	local colorHue
+	local colorSaturation
+	local colorValue
 	if config.Key then
 		keyChip = create("Frame", {
 			Parent = row,
@@ -961,6 +1262,199 @@ function Section:AddToggle(options)
 				keyChipText.Text = "..."
 			end
 		end)
+	end
+	if currentColor then
+		local chipOffset = keyChip and 30 or 0
+		colorChip = create("TextButton", {
+			Parent = row,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -chipOffset, 0.5, 0),
+			BackgroundColor3 = currentColor,
+			Size = UDim2.fromOffset(20, 18),
+			Text = "",
+			AutoButtonColor = false,
+		})
+		applyCorner(colorChip, 5)
+		applyStroke(colorChip, Color3.fromRGB(255, 255, 255), 1, 0.76)
+
+		colorHue, colorSaturation, colorValue = hsvToState(currentColor)
+		colorPopup = create("Frame", {
+			Parent = self.Window.Overlay,
+			BackgroundColor3 = self.Window.Theme.ControlAlt,
+			Size = UDim2.fromOffset(170, 146),
+			Visible = false,
+			ZIndex = 45,
+		})
+		applyCorner(colorPopup, 8)
+		applyStroke(colorPopup, self.Window.Theme.Stroke, 1, 0.18)
+		applyPadding(colorPopup, 8, 8, 8, 8)
+		local popupLayout = addListLayout(colorPopup, 8)
+
+		local satArea = create("Frame", {
+			Parent = colorPopup,
+			BackgroundColor3 = Color3.fromHSV(colorHue, 1, 1),
+			Size = UDim2.new(1, 0, 0, 96),
+			ClipsDescendants = true,
+			ZIndex = 45,
+		})
+		applyCorner(satArea, 8)
+		local whiteOverlay = create("Frame", {
+			Parent = satArea,
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BorderSizePixel = 0,
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = 45,
+		})
+		create("UIGradient", {
+			Parent = whiteOverlay,
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+		})
+		local blackOverlay = create("Frame", {
+			Parent = satArea,
+			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+			BorderSizePixel = 0,
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = 45,
+		})
+		create("UIGradient", {
+			Parent = blackOverlay,
+			Rotation = 90,
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(1, 0),
+			}),
+		})
+		local satCursor = create("Frame", {
+			Parent = satArea,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.fromOffset(10, 10),
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BorderSizePixel = 0,
+			ZIndex = 46,
+		})
+		applyCorner(satCursor, 999)
+		applyStroke(satCursor, Color3.fromRGB(0, 0, 0), 1, 0.55)
+		local hueBar = create("Frame", {
+			Parent = colorPopup,
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			Size = UDim2.new(1, 0, 0, 10),
+			ZIndex = 45,
+		})
+		applyCorner(hueBar, 999)
+		create("UIGradient", {
+			Parent = hueBar,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+				ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+				ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+				ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+				ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+				ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+				ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0)),
+			}),
+		})
+		local hueCursor = create("Frame", {
+			Parent = hueBar,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.fromOffset(8, 14),
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			ZIndex = 46,
+		})
+		applyCorner(hueCursor, 999)
+		applyStroke(hueCursor, Color3.fromRGB(0, 0, 0), 1, 0.5)
+
+		local draggingSat = false
+		local draggingHue = false
+
+		local function toggleColorPopup(state)
+			colorExpanded = state
+			colorPopup.Visible = state
+			if state then
+				colorPopup.Position = UDim2.fromOffset(colorChip.AbsolutePosition.X - 150, colorChip.AbsolutePosition.Y + colorChip.AbsoluteSize.Y + 6)
+			end
+		end
+
+		local function renderColor(fireCallback)
+			currentColor = Color3.fromHSV(colorHue, colorSaturation, colorValue)
+			colorChip.BackgroundColor3 = currentColor
+			satArea.BackgroundColor3 = Color3.fromHSV(colorHue, 1, 1)
+			satCursor.Position = UDim2.new(colorSaturation, 0, 1 - colorValue, 0)
+			hueCursor.Position = UDim2.new(colorHue, 0, 0.5, 0)
+			if fireCallback and config.Color and config.Color.Callback then
+				config.Color.Callback(currentColor, state)
+			end
+		end
+
+		local function updateSat(position)
+			local absPos = satArea.AbsolutePosition
+			local absSize = satArea.AbsoluteSize
+			colorSaturation = clamp((position.X - absPos.X) / math.max(absSize.X, 1), 0, 1)
+			colorValue = 1 - clamp((position.Y - absPos.Y) / math.max(absSize.Y, 1), 0, 1)
+			renderColor(true)
+		end
+
+		local function updateHue(position)
+			local absPos = hueBar.AbsolutePosition
+			local absSize = hueBar.AbsoluteSize
+			colorHue = clamp((position.X - absPos.X) / math.max(absSize.X, 1), 0, 1)
+			renderColor(true)
+		end
+
+		colorChip.MouseButton1Click:Connect(function()
+			toggleColorPopup(not colorExpanded)
+		end)
+
+		satArea.InputBegan:Connect(function(input)
+			if not isPrimaryInput(input) then
+				return
+			end
+			draggingSat = true
+			updateSat(input.Position)
+		end)
+		satArea.InputEnded:Connect(function(input)
+			if isPrimaryInput(input) then
+				draggingSat = false
+			end
+		end)
+		hueBar.InputBegan:Connect(function(input)
+			if not isPrimaryInput(input) then
+				return
+			end
+			draggingHue = true
+			updateHue(input.Position)
+		end)
+		hueBar.InputEnded:Connect(function(input)
+			if isPrimaryInput(input) then
+				draggingHue = false
+			end
+		end)
+		UserInputService.InputChanged:Connect(function(input)
+			if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
+				return
+			end
+			if draggingSat then
+				updateSat(input.Position)
+			elseif draggingHue then
+				updateHue(input.Position)
+			end
+		end)
+		UserInputService.InputBegan:Connect(function(input)
+			if not colorExpanded or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+				return
+			end
+			local position = input.Position
+			local insideX = position.X >= colorPopup.AbsolutePosition.X and position.X <= (colorPopup.AbsolutePosition.X + colorPopup.AbsoluteSize.X)
+			local insideY = position.Y >= colorPopup.AbsolutePosition.Y and position.Y <= (colorPopup.AbsolutePosition.Y + colorPopup.AbsoluteSize.Y)
+			local chipX = position.X >= colorChip.AbsolutePosition.X and position.X <= (colorChip.AbsolutePosition.X + colorChip.AbsoluteSize.X)
+			local chipY = position.Y >= colorChip.AbsolutePosition.Y and position.Y <= (colorChip.AbsolutePosition.Y + colorChip.AbsoluteSize.Y)
+			if not (insideX and insideY) and not (chipX and chipY) then
+				toggleColorPopup(false)
+			end
+		end)
+		renderColor(false)
 	end
 
 	local state = config.Default
@@ -995,12 +1489,56 @@ function Section:AddToggle(options)
 		return state
 	end
 
+	function api:SetKey(keyCode)
+		boundKey = resolveKeyCode(keyCode)
+		if keyChipText then
+			keyChipText.Text = boundKey and boundKey.Name or "..."
+		end
+		return boundKey
+	end
+
+	function api:GetKey()
+		return boundKey
+	end
+
+	function api:SetColor(color)
+		if not colorChip or typeof(color) ~= "Color3" then
+			return currentColor
+		end
+		colorHue, colorSaturation, colorValue = hsvToState(color)
+		currentColor = color
+		colorChip.BackgroundColor3 = color
+		if config.Color and config.Color.Callback then
+			config.Color.Callback(color, state)
+		end
+		return currentColor
+	end
+
+	function api:GetColor()
+		return currentColor
+	end
+
 	toggleBox.MouseButton1Click:Connect(function()
 		api:Set(not state)
 	end)
 
 	row.InputBegan:Connect(function(input)
 		if isPrimaryInput(input) then
+			local position = input.Position
+			if keyChip then
+				local insideKeyX = position.X >= keyChip.AbsolutePosition.X and position.X <= (keyChip.AbsolutePosition.X + keyChip.AbsoluteSize.X)
+				local insideKeyY = position.Y >= keyChip.AbsolutePosition.Y and position.Y <= (keyChip.AbsolutePosition.Y + keyChip.AbsoluteSize.Y)
+				if insideKeyX and insideKeyY then
+					return
+				end
+			end
+			if colorChip then
+				local insideColorX = position.X >= colorChip.AbsolutePosition.X and position.X <= (colorChip.AbsolutePosition.X + colorChip.AbsoluteSize.X)
+				local insideColorY = position.Y >= colorChip.AbsolutePosition.Y and position.Y <= (colorChip.AbsolutePosition.Y + colorChip.AbsoluteSize.Y)
+				if insideColorX and insideColorY then
+					return
+				end
+			end
 			api:Set(not state)
 		end
 	end)
@@ -1011,11 +1549,8 @@ function Section:AddToggle(options)
 		end
 
 		if keyListening and input.KeyCode ~= Enum.KeyCode.Unknown then
-			boundKey = input.KeyCode
+			api:SetKey(input.KeyCode)
 			keyListening = false
-			if keyChipText then
-				keyChipText.Text = input.KeyCode.Name
-			end
 			return
 		end
 
@@ -1025,6 +1560,23 @@ function Section:AddToggle(options)
 	end)
 
 	render()
+	self.Window:RegisterFlag(flag, function()
+		return api:Get()
+	end, function(value)
+		api:Set(value)
+	end)
+	if currentColor then
+		self.Window:RegisterFlag(flag .. "_color", function()
+			return rgbToHex(api:GetColor())
+		end, function(value)
+			if type(value) == "string" and #value == 7 and value:sub(1, 1) == "#" then
+				local r = tonumber(value:sub(2, 3), 16) or 255
+				local g = tonumber(value:sub(4, 5), 16) or 255
+				local b = tonumber(value:sub(6, 7), 16) or 255
+				api:SetColor(Color3.fromRGB(r, g, b))
+			end
+		end)
+	end
 	return api
 end
 
@@ -1039,6 +1591,7 @@ function Section:AddSlider(options)
 		Suffix = "",
 		Callback = nil,
 	}, options or {})
+	local flag = resolveControlFlag(self, config)
 
 	local holder = create("Frame", {
 		Parent = self.Content,
@@ -1144,6 +1697,11 @@ function Section:AddSlider(options)
 	end)
 
 	renderValue(false, true)
+	self.Window:RegisterFlag(flag, function()
+		return api:Get()
+	end, function(value)
+		api:Set(value)
+	end)
 	return api
 end
 
@@ -1155,6 +1713,7 @@ function Section:AddDropdown(options)
 		Default = nil,
 		Callback = nil,
 	}, options or {})
+	local flag = resolveControlFlag(self, config)
 
 	local holder = create("Frame", {
 		Parent = self.Content,
@@ -1169,6 +1728,13 @@ function Section:AddDropdown(options)
 		Text = "",
 		AutoButtonColor = false,
 	})
+	local topOutline = create("Frame", {
+		Parent = holder,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 20),
+	})
+	applyCorner(topOutline, 5)
+	applyStroke(topOutline, self.Window.Theme.Stroke, 1, 0.45)
 
 	createTextLabel(top, UDim2.new(1, -80, 1, 0), UDim2.new(), config.Title, Enum.Font.Gotham, 12, self.Window.Theme.Text)
 	local valueLabel = createTextLabel(top, UDim2.new(0, 110, 1, 0), UDim2.new(1, -128, 0, 0), config.Default or "Select", Enum.Font.Gotham, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Right)
@@ -1275,9 +1841,45 @@ function Section:AddDropdown(options)
 		selectValue(value)
 	end
 
+	function api:SetValues(values)
+		config.Values = values or {}
+		for _, child in ipairs(scroll:GetChildren()) do
+			if child:IsA("TextButton") then
+				child:Destroy()
+			end
+		end
+		for _, value in ipairs(config.Values) do
+			local item = create("TextButton", {
+				Parent = scroll,
+				BackgroundColor3 = self.Window.Theme.Control,
+				Size = UDim2.new(1, 0, 0, 22),
+				Text = tostring(value),
+				Font = Enum.Font.Gotham,
+				TextSize = 12,
+				TextColor3 = self.Window.Theme.Text,
+				AutoButtonColor = false,
+				ZIndex = 41,
+			})
+			applyCorner(item, 6)
+			item.TextXAlignment = Enum.TextXAlignment.Left
+			applyPadding(item, 8, 8, 0, 0)
+			item.MouseButton1Click:Connect(function()
+				selectValue(value)
+				setExpanded(false)
+			end)
+		end
+		refreshPopupSize()
+	end
+
 	function api:Get()
 		return selected
 	end
+
+	self.Window:RegisterFlag(flag, function()
+		return api:Get()
+	end, function(value)
+		api:Set(value)
+	end)
 
 	return api
 end
@@ -1291,6 +1893,7 @@ function Section:AddTextbox(options)
 		Callback = nil,
 		ClearOnFocus = false,
 	}, options or {})
+	local flag = resolveControlFlag(self, config)
 
 	local holder = create("Frame", {
 		Parent = self.Content,
@@ -1322,13 +1925,32 @@ function Section:AddTextbox(options)
 	applyCorner(box, 7)
 	applyPadding(box, 10, 10, 0, 0)
 
+	local api = {}
+
 	box.FocusLost:Connect(function(enterPressed)
 		if config.Callback then
 			config.Callback(box.Text, enterPressed)
 		end
 	end)
 
-	return box
+	function api:Get()
+		return box.Text
+	end
+
+	function api:Set(value)
+		box.Text = tostring(value or "")
+		if config.Callback then
+			config.Callback(box.Text, false)
+		end
+	end
+
+	api.Instance = box
+	self.Window:RegisterFlag(flag, function()
+		return api:Get()
+	end, function(value)
+		api:Set(value)
+	end)
+	return api
 end
 
 function Section:AddKeybind(options)
@@ -1338,6 +1960,7 @@ function Section:AddKeybind(options)
 		Default = Enum.KeyCode.RightShift,
 		Callback = nil,
 	}, options or {})
+	local flag = resolveControlFlag(self, config)
 
 	local row, _, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 44 or 26)
 	row.BackgroundTransparency = 1
@@ -1361,7 +1984,7 @@ function Section:AddKeybind(options)
 	applyCorner(binder, 5)
 
 	local listening = false
-	local current = config.Default
+	local current = resolveKeyCode(config.Default) or Enum.KeyCode.RightShift
 	local api = {}
 
 	binder.MouseButton1Click:Connect(function()
@@ -1385,14 +2008,6 @@ function Section:AddKeybind(options)
 		end
 
 		if not listening and input.KeyCode == current then
-			if subtitleLabel then
-				subtitleLabel.TextColor3 = self.Window.Theme.Accent
-				task.delay(0.18, function()
-					if subtitleLabel.Parent then
-						subtitleLabel.TextColor3 = self.Window.Theme.SubText
-					end
-				end)
-			end
 			if config.Callback then
 				config.Callback(current, false)
 			end
@@ -1404,9 +2019,18 @@ function Section:AddKeybind(options)
 	end
 
 	function api:Set(keyCode)
-		current = keyCode
-		binder.Text = keyCode.Name
+		current = resolveKeyCode(keyCode) or current
+		binder.Text = current.Name
+		if config.Callback then
+			config.Callback(current, true)
+		end
 	end
+
+	self.Window:RegisterFlag(flag, function()
+		return api:Get().Name
+	end, function(value)
+		api:Set(value)
+	end)
 
 	return api
 end
@@ -1418,6 +2042,7 @@ function Section:AddColorPicker(options)
 		Default = self.Window.Theme.Accent,
 		Callback = nil,
 	}, options or {})
+	local flag = resolveControlFlag(self, config)
 
 	local holder = create("Frame", {
 		Parent = self.Content,
@@ -1654,6 +2279,16 @@ function Section:AddColorPicker(options)
 	pickerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refreshHolderSize)
 	render(false)
 	refreshHolderSize()
+	self.Window:RegisterFlag(flag, function()
+		return rgbToHex(api:Get())
+	end, function(value)
+		if type(value) == "string" and #value == 7 and value:sub(1, 1) == "#" then
+			local r = tonumber(value:sub(2, 3), 16) or 255
+			local g = tonumber(value:sub(4, 5), 16) or 255
+			local b = tonumber(value:sub(6, 7), 16) or 255
+			api:Set(Color3.fromRGB(r, g, b))
+		end
+	end)
 	return api
 end
 
@@ -1667,6 +2302,7 @@ function Tab:CreateSection(options)
 	section.Window = self.Window
 	section.Tab = self
 	section.Side = config.Side
+	section.TitleText = config.Title
 
 	section.Root = create("Frame", {
 		Name = config.Title,
@@ -1722,17 +2358,20 @@ function Window:CreateTab(options)
 	tab.Window = self
 	tab.AccentColor = config.Accent
 	tab.Sections = {}
+	tab.TitleText = config.Title
 
 	tab.Button = create("TextButton", {
 		Parent = self.TabList,
-		BackgroundTransparency = 1,
+		BackgroundColor3 = self.Theme.TabIdle,
+		BackgroundTransparency = 0,
 		Size = UDim2.new(0, 0, 0, math.max(24, self.Profile.TabHeight - 14)),
 		AutomaticSize = Enum.AutomaticSize.X,
 		Text = "",
 		AutoButtonColor = false,
 	})
+	applyCorner(tab.Button, 999)
 	tab.ButtonStroke = applyStroke(tab.Button, self.Theme.Stroke, 1, 0.72)
-	applyPadding(tab.Button, 0, 10, 0, 0)
+	applyPadding(tab.Button, 14, 14, 0, 0)
 
 	tab.ButtonText = createTextLabel(tab.Button, UDim2.new(0, 0, 1, 0), UDim2.new(), config.Title, Enum.Font.GothamMedium, self.Profile.ControlText, self.Theme.SubText)
 	tab.ButtonText.AutomaticSize = Enum.AutomaticSize.X
@@ -1744,6 +2383,7 @@ function Window:CreateTab(options)
 		Position = UDim2.new(0, -6, 0.5, 0),
 		Size = UDim2.fromOffset(4, 14),
 		BackgroundColor3 = config.Accent,
+		Visible = false,
 	})
 	applyCorner(tab.AccentDot, 999)
 
@@ -1821,6 +2461,11 @@ function Cloudy.new(options)
 	})
 	self.Profile = getViewportProfile()
 	self.Tabs = {}
+	self.FlagRegistry = {}
+	self.ConfigFolder = config.ConfigFolder
+	self.ShowDesktopOpenButton = config.ShowDesktopOpenButton and true or false
+	self.ShowMobileOpenButton = config.ShowMobileOpenButton ~= false
+	self.ToggleKeybind = resolveKeyCode(config.ToggleKeybind) or Enum.KeyCode.RightShift
 	self.IsOpen = true
 
 	self.Gui = create("ScreenGui", {
@@ -1851,6 +2496,10 @@ function Cloudy.new(options)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
 		GroupTransparency = 0,
+	})
+	self.WindowScale = create("UIScale", {
+		Parent = self.Window,
+		Scale = 1,
 	})
 	self.WindowShadow = create("ImageLabel", {
 		Parent = self.Gui,
@@ -1884,6 +2533,13 @@ function Cloudy.new(options)
 		Size = UDim2.new(1, 0, 0.5, 0),
 	})
 	self.HeaderFill.Name = "HeaderFill"
+	self.HeaderDivider = create("Frame", {
+		Parent = self.Header,
+		BackgroundColor3 = self.Theme.Stroke,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, self.Profile.Padding, 1, -1),
+		Size = UDim2.new(1, -(self.Profile.Padding * 2), 0, 1),
+	})
 
 	applyPadding(self.Header, self.Profile.Padding, self.Profile.Padding, 10, 8)
 	self.TitleLabel = createTextLabel(self.Header, UDim2.new(0.5, 0, 0, 18), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.GothamMedium, self.Profile.TitleText, self.Theme.Text)
@@ -1930,6 +2586,13 @@ function Cloudy.new(options)
 		Size = UDim2.new(1, -(self.Profile.Padding * 2), 1, -10),
 	})
 	applyPadding(self.TabBarFrame, 0, 0, 6, 6)
+	self.TabDivider = create("Frame", {
+		Parent = self.TabBar,
+		BackgroundColor3 = self.Theme.Stroke,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, self.Profile.Padding, 1, 0),
+		Size = UDim2.new(1, -(self.Profile.Padding * 2), 0, 1),
+	})
 
 	self.TabScroll = create("ScrollingFrame", {
 		Parent = self.TabBarFrame,
@@ -1977,6 +2640,14 @@ function Cloudy.new(options)
 		ClipsDescendants = true,
 	})
 
+	self.SnowLayer = create("Frame", {
+		Parent = self.BodyBackground,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		ClipsDescendants = true,
+		ZIndex = 1,
+	})
+
 	self.Footer = create("Frame", {
 		Parent = self.Window,
 		BackgroundColor3 = self.Theme.SurfaceAlt,
@@ -2011,6 +2682,7 @@ function Cloudy.new(options)
 		Parent = self.BodyBackground,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
+		ZIndex = 2,
 	})
 
 	self.Overlay = create("Frame", {
@@ -2033,6 +2705,14 @@ function Cloudy.new(options)
 	self.OpenButton.MouseButton1Click:Connect(function()
 		self:Toggle()
 	end)
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then
+			return
+		end
+		if input.KeyCode == self.ToggleKeybind then
+			self:Toggle()
+		end
+	end)
 
 	self:_applyTheme()
 	self:SetTitle(config.Title)
@@ -2043,6 +2723,7 @@ function Cloudy.new(options)
 	self:SetUpdatedText("Apr 5 2026")
 	self:_enableDragging()
 	self:_enableOpenButtonDragging()
+	self:_startSnow()
 
 	local function refreshOnViewportChange()
 		self:_updateResponsiveLayout()

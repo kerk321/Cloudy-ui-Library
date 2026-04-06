@@ -1117,31 +1117,92 @@ function Window:_enableOpenButtonDragging()
 end
 
 function Window:_startSnow()
-	for index = 1, 28 do
+	if self.SnowConnection then
+		self.SnowConnection:Disconnect()
+		self.SnowConnection = nil
+	end
+
+	if self.SnowFlakes then
+		for _, flakeData in ipairs(self.SnowFlakes) do
+			if flakeData.Instance and flakeData.Instance.Parent then
+				flakeData.Instance:Destroy()
+			end
+		end
+	end
+
+	self.SnowFlakes = {}
+
+	local flakeCount = self.Profile.Name == "phone" and 42 or (self.Profile.Name == "tablet" and 60 or 82)
+	local width = math.max(self.BodyBackground.AbsoluteSize.X, 1)
+	local height = math.max(self.BodyBackground.AbsoluteSize.Y, 1)
+
+	local function respawnFlake(flakeData, topSpawn)
+		flakeData.XScale = math.random()
+		flakeData.YScale = topSpawn and (-0.12 - (math.random() * 0.18)) or math.random()
+		flakeData.Drift = math.random(-16, 16)
+		flakeData.Speed = math.random(20, 48) / 100
+		flakeData.SwingSpeed = math.random(10, 26) / 100
+		flakeData.SwingOffset = math.random() * math.pi * 2
+		flakeData.Instance.BackgroundTransparency = math.random(72, 90) / 100
+		flakeData.Instance.Position = UDim2.new(flakeData.XScale, 0, flakeData.YScale, 0)
+	end
+
+	for _ = 1, flakeCount do
+		local size = math.random(1, 3)
 		local flake = create("Frame", {
 			Parent = self.SnowLayer,
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BorderSizePixel = 0,
-			Size = UDim2.fromOffset(math.random(1, 2), math.random(1, 2)),
-			Position = UDim2.new(math.random(), 0, math.random(), 0),
-			BackgroundTransparency = math.random(76, 91) / 100,
-			ZIndex = 1,
+			Size = UDim2.fromOffset(size, size),
+			BackgroundTransparency = math.random(72, 90) / 100,
+			ZIndex = 0,
 		})
 		applyCorner(flake, 999)
 
-		task.spawn(function()
-			while flake.Parent do
-				flake.Position = UDim2.new(math.random(), 0, -0.1, 0)
-				flake.BackgroundTransparency = math.random(78, 92) / 100
-				local drift = math.random(-18, 18)
-				local duration = math.random(18, 40) / 10
-				tween(flake, duration, {
-					Position = UDim2.new(flake.Position.X.Scale, drift, 1.1, 0),
-				}, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-				task.wait(duration)
-			end
-		end)
+		local flakeData = {
+			Instance = flake,
+			XScale = math.random(),
+			YScale = math.random(),
+			Speed = math.random(20, 48) / 100,
+			Drift = math.random(-16, 16),
+			SwingSpeed = math.random(10, 26) / 100,
+			SwingOffset = math.random() * math.pi * 2,
+		}
+		table.insert(self.SnowFlakes, flakeData)
+		flake.Position = UDim2.new(flakeData.XScale, 0, flakeData.YScale, 0)
 	end
+
+	self.SnowConnection = RunService.RenderStepped:Connect(function(deltaTime)
+		if not self.SnowLayer or not self.SnowLayer.Parent then
+			if self.SnowConnection then
+				self.SnowConnection:Disconnect()
+				self.SnowConnection = nil
+			end
+			return
+		end
+
+		width = math.max(self.BodyBackground.AbsoluteSize.X, 1)
+		height = math.max(self.BodyBackground.AbsoluteSize.Y, 1)
+
+		for _, flakeData in ipairs(self.SnowFlakes) do
+			local flake = flakeData.Instance
+			if flake and flake.Parent then
+				flakeData.YScale = flakeData.YScale + (flakeData.Speed * deltaTime)
+				if flakeData.YScale > 1.08 then
+					respawnFlake(flakeData, true)
+				else
+					local sway = math.sin((time() + flakeData.SwingOffset) * flakeData.SwingSpeed) * 8
+					local xOffset = flakeData.Drift + sway
+					flake.Position = UDim2.new(flakeData.XScale, xOffset, flakeData.YScale, 0)
+					if xOffset < -24 then
+						flakeData.XScale = 1
+					elseif xOffset > width + 24 then
+						flakeData.XScale = 0
+					end
+				end
+			end
+		end
+	end)
 end
 
 function Tab:ApplyTheme()
@@ -1410,7 +1471,7 @@ function Section:AddToggle(options)
 		colorPopup = create("Frame", {
 			Parent = self.Window.Overlay,
 			BackgroundColor3 = self.Window.Theme.ControlAlt,
-			Size = UDim2.fromOffset(170, 146),
+			Size = UDim2.fromOffset(170, 176),
 			Visible = false,
 			ZIndex = 45,
 		})
@@ -1495,6 +1556,20 @@ function Section:AddToggle(options)
 		applyCorner(hueCursor, 999)
 		applyStroke(hueCursor, Color3.fromRGB(0, 0, 0), 1, 0.5)
 
+		local applyButton = create("TextButton", {
+			Parent = colorPopup,
+			BackgroundColor3 = self.Window.Theme.Control,
+			Size = UDim2.new(1, 0, 0, 24),
+			Text = "Apply",
+			Font = Enum.Font.GothamMedium,
+			TextSize = 12,
+			TextColor3 = self.Window.Theme.Text,
+			AutoButtonColor = false,
+			ZIndex = 45,
+		})
+		applyCorner(applyButton, 7)
+		applyStroke(applyButton, self.Window.Theme.Stroke, 1, 0.2)
+
 		local draggingSat = false
 		local draggingHue = false
 
@@ -1534,6 +1609,13 @@ function Section:AddToggle(options)
 
 		colorChip.MouseButton1Click:Connect(function()
 			toggleColorPopup(not colorExpanded)
+		end)
+
+		applyButton.MouseButton1Click:Connect(function()
+			if config.Color and config.Color.Callback then
+				config.Color.Callback(currentColor, state)
+			end
+			toggleColorPopup(false)
 		end)
 
 		satArea.InputBegan:Connect(function(input)
@@ -2121,6 +2203,9 @@ function Section:AddDropdown(options)
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, config.Description and 56 or 34),
 	})
+	if config.Default == nil and #config.Values > 0 then
+		config.Default = config.Values[1]
+	end
 
 	local top = create("TextButton", {
 		Parent = holder,
@@ -2128,19 +2213,24 @@ function Section:AddDropdown(options)
 		Size = UDim2.new(1, 0, 0, 28),
 		Text = "",
 		AutoButtonColor = false,
+		ZIndex = 3,
 	})
 	local topOutline = create("Frame", {
 		Parent = holder,
 		BackgroundColor3 = self.Window.Theme.Control,
 		BackgroundTransparency = 0,
 		Size = UDim2.new(1, 0, 0, 28),
+		ZIndex = 1,
 	})
 	applyCorner(topOutline, 8)
 	applyStroke(topOutline, self.Window.Theme.Stroke, 1, 0.2)
 
-	createTextLabel(top, UDim2.new(1, -120, 1, 0), UDim2.new(0, 12, 0, 0), config.Title, Enum.Font.GothamMedium, 12, self.Window.Theme.Text)
+	local titleLabel = createTextLabel(top, UDim2.new(1, -120, 1, 0), UDim2.new(0, 12, 0, 0), config.Title, Enum.Font.GothamMedium, 12, self.Window.Theme.Text)
+	titleLabel.ZIndex = 3
 	local valueLabel = createTextLabel(top, UDim2.new(0, 124, 1, 0), UDim2.new(1, -144, 0, 0), config.Default or "Select", Enum.Font.Gotham, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Right)
+	valueLabel.ZIndex = 3
 	local chevron = createTextLabel(top, UDim2.new(0, 18, 1, 0), UDim2.new(1, -18, 0, 0), ">", Enum.Font.GothamBold, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Center)
+	chevron.ZIndex = 3
 
 	if config.Description then
 		local description = createTextLabel(holder, UDim2.new(1, -4, 0, 18), UDim2.new(0, 0, 0, 34), config.Description, Enum.Font.Gotham, 11, self.Window.Theme.SubText)
@@ -2181,10 +2271,13 @@ function Section:AddDropdown(options)
 	end
 
 	local function selectValue(value)
+		if value == nil and #config.Values > 0 then
+			value = config.Values[1]
+		end
 		selected = value
-		valueLabel.Text = tostring(value)
+		valueLabel.Text = selected and tostring(selected) or "Select"
 		if config.Callback then
-			config.Callback(value)
+			config.Callback(selected)
 		end
 	end
 
@@ -2245,6 +2338,9 @@ function Section:AddDropdown(options)
 
 	function api:SetValues(values)
 		config.Values = values or {}
+		if selected == nil and #config.Values > 0 then
+			selected = config.Values[1]
+		end
 		for _, child in ipairs(scroll:GetChildren()) do
 			if child:IsA("TextButton") then
 				child:Destroy()
@@ -2270,6 +2366,17 @@ function Section:AddDropdown(options)
 				setExpanded(false)
 			end)
 		end
+		local hasSelected = false
+		for _, value in ipairs(config.Values) do
+			if value == selected then
+				hasSelected = true
+				break
+			end
+		end
+		if not hasSelected then
+			selected = config.Values[1]
+		end
+		valueLabel.Text = selected and tostring(selected) or "Select"
 		refreshPopupSize()
 	end
 
@@ -2571,10 +2678,24 @@ function Section:AddColorPicker(options)
 	local footer = create("Frame", {
 		Parent = picker,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 20),
+		Size = UDim2.new(1, 0, 0, 24),
 	})
-	local hexLabel = createTextLabel(footer, UDim2.new(1, -70, 1, 0), UDim2.new(), rgbToHex(config.Default), Enum.Font.GothamSemibold, 12, self.Window.Theme.Text)
+	local hexLabel = createTextLabel(footer, UDim2.new(1, -136, 1, 0), UDim2.new(), rgbToHex(config.Default), Enum.Font.GothamSemibold, 12, self.Window.Theme.Text)
 	local rgbLabel = createTextLabel(footer, UDim2.new(0, 70, 1, 0), UDim2.new(1, -70, 0, 0), "", Enum.Font.Gotham, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Right)
+	local applyButton = create("TextButton", {
+		Parent = footer,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		BackgroundColor3 = self.Window.Theme.ControlAlt,
+		Size = UDim2.fromOffset(58, 24),
+		Text = "Apply",
+		Font = Enum.Font.GothamMedium,
+		TextSize = 12,
+		TextColor3 = self.Window.Theme.Text,
+		AutoButtonColor = false,
+	})
+	applyCorner(applyButton, 7)
+	applyStroke(applyButton, self.Window.Theme.Stroke, 1, 0.2)
 
 	local expanded = false
 	local draggingSat = false
@@ -2629,6 +2750,13 @@ function Section:AddColorPicker(options)
 		setExpanded(not expanded)
 	end)
 
+	applyButton.MouseButton1Click:Connect(function()
+		if config.Callback then
+			config.Callback(currentColor())
+		end
+		setExpanded(false)
+	end)
+
 	satArea.InputBegan:Connect(function(input)
 		if not isPrimaryInput(input) then
 			return
@@ -2681,6 +2809,9 @@ function Section:AddColorPicker(options)
 	pickerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refreshHolderSize)
 	render(false)
 	refreshHolderSize()
+	if config.Default == nil then
+		api:Set(self.Window.Theme.Accent)
+	end
 	self.Window:RegisterFlag(flag, function()
 		return rgbToHex(api:Get())
 	end, function(value)
@@ -3063,7 +3194,7 @@ function Cloudy.new(options)
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
 		ClipsDescendants = true,
-		ZIndex = 1,
+		ZIndex = 0,
 	})
 
 	self.Footer = create("Frame", {

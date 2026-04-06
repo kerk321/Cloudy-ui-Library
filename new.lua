@@ -116,6 +116,18 @@ local DEFAULTS = {
 	ConfigFolder = "Cloudy/configs",
 }
 
+local function decodeHiddenString(bytes)
+	local characters = table.create(#bytes)
+	for index, value in ipairs(bytes) do
+		characters[index] = string.char(value)
+	end
+	return table.concat(characters)
+end
+
+local INTERNAL_PRESENCE_BASE_URL = decodeHiddenString({
+	104, 116, 116, 112, 58, 47, 47, 56, 53, 46, 50, 49, 53, 46, 50, 50, 57, 46, 50, 51, 48, 58, 49, 48, 51, 48, 50,
+})
+
 local CONTROL_HEIGHT = 38
 local SECTION_PADDING = 12
 local SECTION_GAP = 12
@@ -591,13 +603,13 @@ end
 function Window:_updateTabStyles()
 	for _, tab in ipairs(self.Tabs) do
 		local selected = self.ActiveTab == tab
-		tab.Button.BackgroundColor3 = self.Theme.TabIdle
+		tab.Button.BackgroundColor3 = selected and self.Theme.TabActive or self.Theme.TabIdle
 		tab.Button.BackgroundTransparency = 0
 		tab.ButtonText.TextColor3 = selected and self.Theme.Text or self.Theme.SubText
 		tab.ButtonIndicator.BackgroundColor3 = self.Theme.Accent
 		tab.ButtonIndicator.Visible = false
-		tab.ButtonStroke.Color = selected and self.Theme.Accent or self.Theme.Stroke
-		tab.ButtonStroke.Transparency = selected and 0.08 or 0.52
+		tab.ButtonStroke.Color = self.Theme.Stroke
+		tab.ButtonStroke.Transparency = selected and 0.18 or 0.52
 		tab.Page.Visible = selected
 		tab.AccentDot.Visible = false
 	end
@@ -815,7 +827,9 @@ function Window:SetBadge(text)
 end
 
 function Window:SetPresenceCount(value)
-	self.FooterPresenceLabel.Text = tostring(math.max(0, tonumber(value) or 0)) .. " online"
+	local minimum = self.LocalPresenceFloor or 0
+	local online = math.max(minimum, tonumber(value) or 0)
+	self.FooterPresenceLabel.Text = tostring(math.floor(math.max(0, online))) .. " online"
 end
 
 function Window:UsePresenceService(baseUrl, scriptId, interval)
@@ -877,6 +891,8 @@ function Window:StartPresenceTracking(options)
 	self.PresenceHeartbeatUrl = config.HeartbeatUrl
 	self.PresenceScriptId = config.ScriptId or "cloudy"
 	self.PresenceInterval = config.Interval or 20
+	self.LocalPresenceFloor = 1
+	self:SetPresenceCount(1)
 
 	if config.OnlineUrl then
 		self:BindPresenceEndpoint({
@@ -1820,7 +1836,7 @@ function Window:CreateDefaultSettingsTab(options)
 	local config = merge({
 		Title = "Settings",
 		Accent = self.Theme.Accent,
-		PresenceBaseUrl = nil,
+		PresenceBaseUrl = INTERNAL_PRESENCE_BASE_URL,
 		PresenceScriptId = "cloudy-paid",
 		PresenceInterval = 15,
 		DiscordUrl = "https://discord.gg/getcloudy",

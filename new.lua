@@ -26,7 +26,82 @@ Cloudy.Theme = {
 	Warning = Color3.fromRGB(230, 166, 73),
 	Overlay = Color3.fromRGB(5, 6, 10),
 	TabIdle = Color3.fromRGB(10, 11, 17),
-	TabActive = Color3.fromRGB(29, 30, 42),
+	TabActive = Color3.fromRGB(10, 11, 17),
+}
+
+Cloudy.DefaultThemePresets = {
+	["Cloudy Rose"] = {
+		Background = Color3.fromRGB(8, 9, 15),
+		Surface = Color3.fromRGB(11, 12, 19),
+		SurfaceAlt = Color3.fromRGB(14, 15, 23),
+		Section = Color3.fromRGB(13, 14, 22),
+		Control = Color3.fromRGB(18, 19, 29),
+		ControlAlt = Color3.fromRGB(24, 25, 36),
+		Stroke = Color3.fromRGB(31, 33, 46),
+		Text = Color3.fromRGB(235, 235, 240),
+		SubText = Color3.fromRGB(119, 121, 141),
+		Accent = Color3.fromRGB(214, 48, 169),
+		AccentDark = Color3.fromRGB(137, 26, 106),
+		Success = Color3.fromRGB(62, 198, 128),
+		Warning = Color3.fromRGB(230, 166, 73),
+		Overlay = Color3.fromRGB(5, 6, 10),
+		TabIdle = Color3.fromRGB(10, 11, 17),
+		TabActive = Color3.fromRGB(10, 11, 17),
+	},
+	["Glacier Blue"] = {
+		Background = Color3.fromRGB(7, 10, 16),
+		Surface = Color3.fromRGB(10, 15, 24),
+		SurfaceAlt = Color3.fromRGB(13, 20, 31),
+		Section = Color3.fromRGB(14, 20, 31),
+		Control = Color3.fromRGB(18, 25, 38),
+		ControlAlt = Color3.fromRGB(23, 32, 47),
+		Stroke = Color3.fromRGB(37, 52, 72),
+		Text = Color3.fromRGB(236, 242, 248),
+		SubText = Color3.fromRGB(132, 150, 170),
+		Accent = Color3.fromRGB(88, 184, 255),
+		AccentDark = Color3.fromRGB(41, 104, 152),
+		Success = Color3.fromRGB(86, 211, 170),
+		Warning = Color3.fromRGB(245, 190, 89),
+		Overlay = Color3.fromRGB(5, 8, 14),
+		TabIdle = Color3.fromRGB(10, 16, 25),
+		TabActive = Color3.fromRGB(10, 16, 25),
+	},
+	["Graphite"] = {
+		Background = Color3.fromRGB(10, 10, 12),
+		Surface = Color3.fromRGB(15, 15, 18),
+		SurfaceAlt = Color3.fromRGB(19, 19, 22),
+		Section = Color3.fromRGB(17, 17, 20),
+		Control = Color3.fromRGB(22, 22, 26),
+		ControlAlt = Color3.fromRGB(29, 29, 34),
+		Stroke = Color3.fromRGB(46, 46, 54),
+		Text = Color3.fromRGB(240, 240, 243),
+		SubText = Color3.fromRGB(142, 142, 152),
+		Accent = Color3.fromRGB(180, 188, 255),
+		AccentDark = Color3.fromRGB(87, 93, 140),
+		Success = Color3.fromRGB(82, 210, 145),
+		Warning = Color3.fromRGB(236, 182, 95),
+		Overlay = Color3.fromRGB(5, 5, 7),
+		TabIdle = Color3.fromRGB(14, 14, 17),
+		TabActive = Color3.fromRGB(14, 14, 17),
+	},
+	["Amber Pulse"] = {
+		Background = Color3.fromRGB(12, 8, 8),
+		Surface = Color3.fromRGB(18, 11, 12),
+		SurfaceAlt = Color3.fromRGB(24, 14, 15),
+		Section = Color3.fromRGB(24, 14, 16),
+		Control = Color3.fromRGB(30, 18, 20),
+		ControlAlt = Color3.fromRGB(39, 23, 26),
+		Stroke = Color3.fromRGB(64, 39, 42),
+		Text = Color3.fromRGB(245, 238, 233),
+		SubText = Color3.fromRGB(166, 147, 140),
+		Accent = Color3.fromRGB(255, 140, 76),
+		AccentDark = Color3.fromRGB(145, 69, 35),
+		Success = Color3.fromRGB(89, 205, 145),
+		Warning = Color3.fromRGB(255, 191, 96),
+		Overlay = Color3.fromRGB(10, 6, 6),
+		TabIdle = Color3.fromRGB(16, 10, 10),
+		TabActive = Color3.fromRGB(16, 10, 10),
+	},
 }
 
 local DEFAULTS = {
@@ -342,6 +417,22 @@ local function httpGet(url)
 	return httpRequest("GET", url, nil, nil)
 end
 
+local function copyToClipboard(text)
+	if type(setclipboard) == "function" then
+		setclipboard(text)
+		return true
+	end
+	if type(toclipboard) == "function" then
+		toclipboard(text)
+		return true
+	end
+	if Clipboard and type(Clipboard.set) == "function" then
+		Clipboard.set(text)
+		return true
+	end
+	return false
+end
+
 local function resolveKeyCode(value)
 	if typeof(value) == "EnumItem" and value.EnumType == Enum.KeyCode then
 		return value
@@ -500,13 +591,13 @@ end
 function Window:_updateTabStyles()
 	for _, tab in ipairs(self.Tabs) do
 		local selected = self.ActiveTab == tab
-		tab.Button.BackgroundColor3 = selected and self.Theme.TabActive or self.Theme.TabIdle
+		tab.Button.BackgroundColor3 = self.Theme.TabIdle
 		tab.Button.BackgroundTransparency = 0
 		tab.ButtonText.TextColor3 = selected and self.Theme.Text or self.Theme.SubText
 		tab.ButtonIndicator.BackgroundColor3 = self.Theme.Accent
 		tab.ButtonIndicator.Visible = false
 		tab.ButtonStroke.Color = selected and self.Theme.Accent or self.Theme.Stroke
-		tab.ButtonStroke.Transparency = selected and 0.22 or 0.52
+		tab.ButtonStroke.Transparency = selected and 0.08 or 0.52
 		tab.Page.Visible = selected
 		tab.AccentDot.Visible = false
 	end
@@ -725,6 +816,19 @@ end
 
 function Window:SetPresenceCount(value)
 	self.FooterPresenceLabel.Text = tostring(value) .. " online"
+end
+
+function Window:UsePresenceService(baseUrl, scriptId, interval)
+	if not baseUrl or baseUrl == "" then
+		return false
+	end
+	self:StartPresenceTracking({
+		HeartbeatUrl = baseUrl .. "/presence/heartbeat",
+		OnlineUrl = baseUrl .. "/presence/online?script_id=" .. (scriptId or "cloudy"),
+		ScriptId = scriptId or "cloudy",
+		Interval = interval or 15,
+	})
+	return true
 end
 
 function Window:BindPresenceEndpoint(options)
@@ -988,14 +1092,14 @@ function Window:_enableOpenButtonDragging()
 end
 
 function Window:_startSnow()
-	for index = 1, 18 do
+	for index = 1, 42 do
 		local flake = create("Frame", {
 			Parent = self.SnowLayer,
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BorderSizePixel = 0,
-			Size = UDim2.fromOffset(math.random(1, 3), math.random(1, 3)),
+			Size = UDim2.fromOffset(math.random(1, 2), math.random(1, 2)),
 			Position = UDim2.new(math.random(), 0, math.random(), 0),
-			BackgroundTransparency = math.random(70, 88) / 100,
+			BackgroundTransparency = math.random(76, 91) / 100,
 			ZIndex = 1,
 		})
 		applyCorner(flake, 999)
@@ -1003,9 +1107,9 @@ function Window:_startSnow()
 		task.spawn(function()
 			while flake.Parent do
 				flake.Position = UDim2.new(math.random(), 0, -0.1, 0)
-				flake.BackgroundTransparency = math.random(72, 90) / 100
-				local drift = math.random(-24, 24)
-				local duration = math.random(14, 24) / 2
+				flake.BackgroundTransparency = math.random(78, 92) / 100
+				local drift = math.random(-18, 18)
+				local duration = math.random(18, 40) / 10
 				tween(flake, duration, {
 					Position = UDim2.new(flake.Position.X.Scale, drift, 1.1, 0),
 				}, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
@@ -1019,7 +1123,7 @@ function Tab:ApplyTheme()
 	for _, section in ipairs(self.Sections) do
 		section:ApplyTheme()
 	end
-	self.Button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	self.Button.BackgroundColor3 = self.Window.Theme.TabIdle
 	self.Page.ScrollBarImageColor3 = self.Window.Theme.Accent
 end
 
@@ -1194,21 +1298,23 @@ function Section:AddToggle(options)
 	}, options or {})
 	local flag = resolveControlFlag(self, config)
 
-	local row, titleLabel, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 44 or 26)
+	local row, titleLabel, subtitleLabel = makeInteractiveRow(self, config.Title, config.Description, config.Description and 46 or 30)
 	row.BackgroundTransparency = 1
 	for _, child in ipairs(row:GetChildren()) do
 		if child:IsA("UIStroke") then
 			child.Transparency = 1
 		end
 	end
-	titleLabel.Position = UDim2.new(0, 28, 0, 0)
-	titleLabel.Size = UDim2.new(1, -136, 0, 16)
+	local state = config.Default
+	titleLabel.AnchorPoint = Vector2.new(0, subtitleLabel and 0 or 0.5)
+	titleLabel.Position = UDim2.new(0, 30, subtitleLabel and 0 or 0.5, subtitleLabel and 1 or 0)
+	titleLabel.Size = UDim2.new(1, -138, 0, 16)
 	titleLabel.Font = Enum.Font.Gotham
 	titleLabel.TextSize = 12
 	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 	if subtitleLabel then
-		subtitleLabel.Position = UDim2.new(0, 28, 0, 14)
-		subtitleLabel.Size = UDim2.new(1, -136, 0, 14)
+		subtitleLabel.Position = UDim2.new(0, 30, 0, 19)
+		subtitleLabel.Size = UDim2.new(1, -138, 0, 14)
 		subtitleLabel.TextSize = 11
 	end
 	local toggleBox = create("TextButton", {
@@ -1457,7 +1563,6 @@ function Section:AddToggle(options)
 		renderColor(false)
 	end
 
-	local state = config.Default
 	local boundKey = resolveKeyCode(config.Key)
 
 	local function render()
@@ -1616,7 +1721,18 @@ function Section:AddSlider(options)
 		Position = UDim2.new(0, 0, 0, trackY),
 		Size = UDim2.new(1, 0, 0, 4),
 	})
+	track.Active = true
 	applyCorner(track, 999)
+
+	local hitbox = create("TextButton", {
+		Parent = holder,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 0, trackY - 7),
+		Size = UDim2.new(1, 0, 0, 18),
+		Text = "",
+		AutoButtonColor = false,
+	})
 
 	local fill = create("Frame", {
 		Parent = track,
@@ -1673,19 +1789,16 @@ function Section:AddSlider(options)
 		return currentValue
 	end
 
-	track.InputBegan:Connect(function(input)
+	local function beginDrag(input)
 		if not isPrimaryInput(input) then
 			return
 		end
 		dragging = true
 		setFromInput(input.Position.X, true)
-	end)
+	end
 
-	track.InputEnded:Connect(function(input)
-		if isPrimaryInput(input) then
-			dragging = false
-		end
-	end)
+	hitbox.InputBegan:Connect(beginDrag)
+	track.InputBegan:Connect(beginDrag)
 
 	UserInputService.InputChanged:Connect(function(input)
 		if not dragging then
@@ -1696,6 +1809,12 @@ function Section:AddSlider(options)
 		end
 	end)
 
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+
 	renderValue(false, true)
 	self.Window:RegisterFlag(flag, function()
 		return api:Get()
@@ -1703,6 +1822,247 @@ function Section:AddSlider(options)
 		api:Set(value)
 	end)
 	return api
+end
+
+function Window:CreateDefaultSettingsTab(options)
+	local config = merge({
+		Title = "Settings",
+		Accent = self.Theme.Accent,
+		PresenceBaseUrl = nil,
+		PresenceScriptId = "cloudy-paid",
+		PresenceInterval = 15,
+		DiscordUrl = "https://discord.gg/getcloudy",
+		WebsiteUrl = "https://github.com/kerk321/Cloudy-ui-Library",
+		ThemePresets = Cloudy.DefaultThemePresets,
+		DefaultPreset = "Cloudy Rose",
+		FooterUrl = ".gg/getcloudy",
+		UpdatedText = nil,
+	}, options or {})
+
+	if config.FooterUrl then
+		self:SetFooterUrl(config.FooterUrl)
+	end
+	if config.UpdatedText then
+		self:SetUpdatedText(config.UpdatedText)
+	end
+	if config.PresenceBaseUrl and config.PresenceBaseUrl ~= "" then
+		self:UsePresenceService(config.PresenceBaseUrl, config.PresenceScriptId, config.PresenceInterval)
+	end
+
+	local settingsTab = self:CreateTab({
+		Title = config.Title,
+		Accent = config.Accent,
+	})
+
+	local desktopSection = settingsTab:CreateSection({
+		Title = "Desktop",
+		Side = "Left",
+	})
+	desktopSection:AddParagraph("Desktop", "Use RightShift by default. The floating button stays hidden on PC unless you enable it.")
+	local menuKeybind = desktopSection:AddKeybind({
+		Title = "Menu Keybind",
+		Description = "Default desktop key for opening and closing the menu.",
+		Default = self.ToggleKeybind,
+		Flag = "cloudy_menu_keybind",
+		Callback = function(key, changed)
+			if changed then
+				self:SetToggleKeybind(key)
+			end
+		end,
+	})
+	desktopSection:AddToggle({
+		Title = "Desktop Floating Button",
+		Description = "Shows the draggable button on PC too.",
+		Default = self.ShowDesktopOpenButton,
+		Flag = "cloudy_desktop_open_button",
+		Callback = function(value)
+			self:SetDesktopOpenButtonVisible(value)
+		end,
+	})
+
+	local mobileSection = settingsTab:CreateSection({
+		Title = "Mobile",
+		Side = "Left",
+	})
+	mobileSection:AddParagraph("Mobile", "Touch devices can keep the floating button visible so the menu stays easy to reach.")
+	mobileSection:AddToggle({
+		Title = "Mobile Floating Button",
+		Description = "Keeps the draggable button visible on touch devices.",
+		Default = self.ShowMobileOpenButton,
+		Flag = "cloudy_mobile_open_button",
+		Callback = function(value)
+			self:SetMobileOpenButtonVisible(value)
+		end,
+	})
+
+	local themeSection = settingsTab:CreateSection({
+		Title = "Theme",
+		Side = "Right",
+	})
+	themeSection:AddParagraph("Theme", "Choose a preset for the whole interface, then fine tune the accent if you want a custom look.")
+	local presetDropdown
+	local accentPicker
+	local applyingPreset = false
+	local function applyPreset(name)
+		local preset = config.ThemePresets[name]
+		if not preset then
+			return
+		end
+		applyingPreset = true
+		self:SetTheme(preset)
+		self:SetAccentColor(preset.Accent)
+		if accentPicker then
+			accentPicker:Set(preset.Accent)
+		end
+		applyingPreset = false
+	end
+	local presetValues = {}
+	for name in pairs(config.ThemePresets) do
+		table.insert(presetValues, name)
+	end
+	table.sort(presetValues)
+	table.insert(presetValues, "Custom")
+	presetDropdown = themeSection:AddDropdown({
+		Title = "Preset",
+		Values = presetValues,
+		Default = config.DefaultPreset,
+		Flag = "cloudy_theme_preset",
+		Callback = function(value)
+			if value ~= "Custom" then
+				applyPreset(value)
+			end
+		end,
+	})
+	accentPicker = themeSection:AddColorPicker({
+		Title = "Accent Color",
+		Description = "Updates the full library theme in real time.",
+		Default = self.Theme.Accent,
+		Flag = "cloudy_theme_accent",
+		Callback = function(color)
+			if presetDropdown and not applyingPreset then
+				presetDropdown:Set("Custom")
+			end
+			self:SetAccentColor(color)
+		end,
+	})
+
+	local configSection = settingsTab:CreateSection({
+		Title = "Configs",
+		Side = "Right",
+	})
+	configSection:AddParagraph("Profiles", "Create, save, refresh, and load configs here. Disk save is used when file APIs exist; otherwise configs stay available for the current session.")
+	local configNameBox = configSection:AddTextbox({
+		Title = "Config Name",
+		Description = "Name used for save and load.",
+		Default = "default",
+		Flag = "cloudy_config_name",
+	})
+	local configList = configSection:AddDropdown({
+		Title = "Saved Configs",
+		Values = {"default"},
+		Default = "default",
+		Callback = function(value)
+			configNameBox:Set(value)
+		end,
+	})
+	local function refreshConfigs(selectName)
+		local configs = self:ListConfigs()
+		if #configs == 0 then
+			configs = {"default"}
+		end
+		configList:SetValues(configs)
+		configList:Set(selectName or configs[1])
+		return configs
+	end
+	configSection:AddButton({
+		Title = "Refresh Config List",
+		Callback = function()
+			local configs = refreshConfigs(configNameBox:Get())
+			self:Notify({
+				Title = "Configs",
+				Content = "Found " .. tostring(#configs) .. " config(s).",
+				Duration = 2,
+			})
+		end,
+	})
+	configSection:AddButton({
+		Title = "Create / Save Config",
+		Callback = function()
+			local configName = configNameBox:Get()
+			local success, result = self:SaveConfig(configName)
+			if success then
+				refreshConfigs(configName)
+				self:Notify({
+					Title = "Config Saved",
+					Content = result == "memory" and ("Saved profile " .. configName .. " in session memory.") or ("Saved profile " .. configName),
+					Duration = 2,
+				})
+			else
+				self:Notify({
+					Title = "Save Failed",
+					Content = tostring(result),
+					Duration = 2.4,
+				})
+			end
+		end,
+	})
+	configSection:AddButton({
+		Title = "Load Selected Config",
+		Callback = function()
+			local selected = configList:Get()
+			local success, result = self:LoadConfig(selected)
+			if success then
+				configNameBox:Set(selected)
+				menuKeybind:Set(self.ToggleKeybind)
+				self:Notify({
+					Title = "Config Loaded",
+					Content = "Loaded profile " .. tostring(selected),
+					Duration = 2,
+				})
+			else
+				self:Notify({
+					Title = "Load Failed",
+					Content = tostring(result),
+					Duration = 2.4,
+				})
+			end
+		end,
+	})
+
+	local infoSection = settingsTab:CreateSection({
+		Title = "Info",
+		Side = "Right",
+	})
+	infoSection:AddParagraph("Support", "Join our Discord if you need help, want to report bugs, or want to stay updated on fixes and new builds.")
+	infoSection:AddButton({
+		Title = "Copy Discord Link",
+		Callback = function()
+			local success = copyToClipboard(config.DiscordUrl)
+			self:Notify({
+				Title = success and "Copied" or "Clipboard Missing",
+				Content = success and "Discord link copied to your clipboard." or config.DiscordUrl,
+				Duration = 2.4,
+			})
+		end,
+	})
+	infoSection:AddButton({
+		Title = "Copy Website Link",
+		Callback = function()
+			local success = copyToClipboard(config.WebsiteUrl)
+			self:Notify({
+				Title = success and "Copied" or "Clipboard Missing",
+				Content = success and "Website link copied to your clipboard." or config.WebsiteUrl,
+				Duration = 2.4,
+			})
+		end,
+	})
+
+	if config.ThemePresets[config.DefaultPreset] then
+		applyPreset(config.DefaultPreset)
+	end
+	refreshConfigs("default")
+
+	return settingsTab
 end
 
 function Section:AddDropdown(options)

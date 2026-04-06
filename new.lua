@@ -626,9 +626,9 @@ function Window:_updateTabStyles()
 		tab.Button.BackgroundTransparency = selected and 0 or 1
 		tab.ButtonText.TextColor3 = selected and self.Theme.Text or self.Theme.SubText
 		tab.ButtonText.Font = selected and Enum.Font.GothamSemibold or Enum.Font.Gotham
-		tab.ButtonIndicator.BackgroundColor3 = self.Theme.Accent
+		tab.ButtonIndicator.BackgroundColor3 = self.Theme.Stroke
 		tab.ButtonIndicator.Visible = false
-		tab.ButtonStroke.Color = self.Theme.Accent
+		tab.ButtonStroke.Color = self.Theme.Stroke
 		tab.ButtonStroke.Transparency = selected and 0.15 or 1
 		tab.Page.Visible = selected
 		tab.AccentDot.Visible = false

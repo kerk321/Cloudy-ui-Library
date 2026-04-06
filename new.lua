@@ -815,7 +815,7 @@ function Window:SetBadge(text)
 end
 
 function Window:SetPresenceCount(value)
-	self.FooterPresenceLabel.Text = tostring(value) .. " online"
+	self.FooterPresenceLabel.Text = tostring(math.max(0, tonumber(value) or 0)) .. " online"
 end
 
 function Window:UsePresenceService(baseUrl, scriptId, interval)
@@ -898,9 +898,17 @@ function Window:StartPresenceTracking(options)
 				timestamp = os.time(),
 			})
 
-			httpRequest("POST", config.HeartbeatUrl, payload, {
+			local response = httpRequest("POST", config.HeartbeatUrl, payload, {
 				["Content-Type"] = "application/json",
 			})
+			if response then
+				local ok, decoded = pcall(function()
+					return HttpService:JSONDecode(response)
+				end)
+				if ok and type(decoded) == "table" and decoded.online then
+					self:SetPresenceCount(decoded.online)
+				end
+			end
 
 			task.wait(self.PresenceInterval)
 		end
@@ -924,35 +932,19 @@ end
 function Window:SetOpen(isOpen)
 	self.IsOpen = isOpen
 	self:_updateOpenButtonVisibility()
+	self.SnowLayer.Visible = isOpen
 
 	if isOpen then
 		self.Window.Visible = true
 		self.WindowShadow.Visible = false
-		self.Window.GroupTransparency = 1
-		self.WindowScale.Scale = 0.985
-		self.Window.Position = UDim2.new(0.5, 0, 0.53, 0)
-		tween(self.Window, 0.22, {
-			GroupTransparency = 0,
-			Position = UDim2.new(0.5, 0, 0.5, 0),
-		})
-		tween(self.WindowScale, 0.22, {
-			Scale = 1,
-		}, Enum.EasingStyle.Quart)
+		self.Window.GroupTransparency = 0
+		self.WindowScale.Scale = 1
+		self.Window.Position = UDim2.new(0.5, 0, 0.5, 0)
 		self.OpenButtonText.Text = "Close"
 	else
 		self.OpenButtonText.Text = "Open"
-		tween(self.WindowScale, 0.16, {
-			Scale = 0.985,
-		}, Enum.EasingStyle.Quad)
-		local animation = tween(self.Window, 0.18, {
-			GroupTransparency = 1,
-			Position = UDim2.new(0.5, 0, 0.53, 0),
-		}, Enum.EasingStyle.Quad)
-		animation.Completed:Once(function()
-			if not self.IsOpen then
-				self.Window.Visible = false
-			end
-		end)
+		self.Window.GroupTransparency = 1
+		self.Window.Visible = false
 	end
 end
 
@@ -1092,7 +1084,7 @@ function Window:_enableOpenButtonDragging()
 end
 
 function Window:_startSnow()
-	for index = 1, 42 do
+	for index = 1, 28 do
 		local flake = create("Frame", {
 			Parent = self.SnowLayer,
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -2074,41 +2066,43 @@ function Section:AddDropdown(options)
 		Callback = nil,
 	}, options or {})
 	local flag = resolveControlFlag(self, config)
+	local section = self
 
 	local holder = create("Frame", {
 		Parent = self.Content,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, config.Description and 38 or 24),
+		Size = UDim2.new(1, 0, 0, config.Description and 56 or 34),
 	})
 
 	local top = create("TextButton", {
 		Parent = holder,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 20),
+		Size = UDim2.new(1, 0, 0, 28),
 		Text = "",
 		AutoButtonColor = false,
 	})
 	local topOutline = create("Frame", {
 		Parent = holder,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 20),
+		BackgroundColor3 = self.Window.Theme.Control,
+		BackgroundTransparency = 0,
+		Size = UDim2.new(1, 0, 0, 28),
 	})
-	applyCorner(topOutline, 5)
-	applyStroke(topOutline, self.Window.Theme.Stroke, 1, 0.45)
+	applyCorner(topOutline, 8)
+	applyStroke(topOutline, self.Window.Theme.Stroke, 1, 0.2)
 
-	createTextLabel(top, UDim2.new(1, -80, 1, 0), UDim2.new(), config.Title, Enum.Font.Gotham, 12, self.Window.Theme.Text)
-	local valueLabel = createTextLabel(top, UDim2.new(0, 110, 1, 0), UDim2.new(1, -128, 0, 0), config.Default or "Select", Enum.Font.Gotham, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Right)
-	local chevron = createTextLabel(top, UDim2.new(0, 16, 1, 0), UDim2.new(1, -16, 0, 0), ">", Enum.Font.GothamBold, 11, self.Window.Theme.SubText, Enum.TextXAlignment.Center)
+	createTextLabel(top, UDim2.new(1, -120, 1, 0), UDim2.new(0, 12, 0, 0), config.Title, Enum.Font.GothamMedium, 12, self.Window.Theme.Text)
+	local valueLabel = createTextLabel(top, UDim2.new(0, 124, 1, 0), UDim2.new(1, -144, 0, 0), config.Default or "Select", Enum.Font.Gotham, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Right)
+	local chevron = createTextLabel(top, UDim2.new(0, 18, 1, 0), UDim2.new(1, -18, 0, 0), ">", Enum.Font.GothamBold, 12, self.Window.Theme.SubText, Enum.TextXAlignment.Center)
 
 	if config.Description then
-		local description = createTextLabel(holder, UDim2.new(1, 0, 0, 14), UDim2.new(0, 0, 0, 18), config.Description, Enum.Font.Gotham, 11, self.Window.Theme.SubText)
+		local description = createTextLabel(holder, UDim2.new(1, -4, 0, 18), UDim2.new(0, 0, 0, 34), config.Description, Enum.Font.Gotham, 11, self.Window.Theme.SubText)
 		description.TextWrapped = true
 	end
 
 	local list = create("Frame", {
 		Parent = self.Window.Overlay,
 		BackgroundColor3 = self.Window.Theme.ControlAlt,
-		Size = UDim2.fromOffset(180, 0),
+		Size = UDim2.fromOffset(220, 0),
 		Visible = false,
 		ZIndex = 40,
 	})
@@ -2132,9 +2126,9 @@ function Section:AddDropdown(options)
 	local api = {}
 
 	local function refreshPopupSize()
-		local itemHeight = (#config.Values * 26) + 8
-		local popupHeight = math.min(itemHeight, 150)
-		list.Size = UDim2.fromOffset(math.max(top.AbsoluteSize.X, 180), popupHeight)
+		local itemHeight = (#config.Values * 32) + 10
+		local popupHeight = math.min(itemHeight, 192)
+		list.Size = UDim2.fromOffset(math.max(top.AbsoluteSize.X, 220), popupHeight)
 		scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
 	end
 
@@ -2160,7 +2154,7 @@ function Section:AddDropdown(options)
 		local item = create("TextButton", {
 			Parent = scroll,
 			BackgroundColor3 = self.Window.Theme.Control,
-			Size = UDim2.new(1, 0, 0, 22),
+			Size = UDim2.new(1, 0, 0, 28),
 			Text = tostring(value),
 			Font = Enum.Font.Gotham,
 			TextSize = 12,
@@ -2211,12 +2205,12 @@ function Section:AddDropdown(options)
 		for _, value in ipairs(config.Values) do
 			local item = create("TextButton", {
 				Parent = scroll,
-				BackgroundColor3 = self.Window.Theme.Control,
-				Size = UDim2.new(1, 0, 0, 22),
+				BackgroundColor3 = section.Window.Theme.Control,
+				Size = UDim2.new(1, 0, 0, 28),
 				Text = tostring(value),
 				Font = Enum.Font.Gotham,
 				TextSize = 12,
-				TextColor3 = self.Window.Theme.Text,
+				TextColor3 = section.Window.Theme.Text,
 				AutoButtonColor = false,
 				ZIndex = 41,
 			})
@@ -3078,7 +3072,7 @@ function Cloudy.new(options)
 	self:SetTitle(config.Title)
 	self:SetSubtitle(config.Subtitle)
 	self:SetBadge(config.Badge)
-	self:SetPresenceCount(2075)
+	self:SetPresenceCount(0)
 	self:SetFooterUrl(".gg/getcloudy")
 	self:SetUpdatedText("Apr 5 2026")
 	self:_enableDragging()

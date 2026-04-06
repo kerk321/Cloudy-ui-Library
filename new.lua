@@ -114,6 +114,8 @@ local DEFAULTS = {
 	ShowDesktopOpenButton = false,
 	ShowMobileOpenButton = true,
 	ConfigFolder = "Cloudy/configs",
+	AutoCreateSettingsTab = true,
+	SettingsTab = nil,
 }
 
 local function decodeHiddenString(bytes)
@@ -128,7 +130,7 @@ local INTERNAL_PRESENCE_BASE_URL = decodeHiddenString({
 	104, 116, 116, 112, 58, 47, 47, 56, 53, 46, 50, 49, 53, 46, 50, 50, 57, 46, 50, 51, 48, 58, 49, 48, 51, 48, 50,
 })
 
-local CONTROL_HEIGHT = 38
+local CONTROL_HEIGHT = 34
 local SECTION_PADDING = 12
 local SECTION_GAP = 12
 
@@ -259,14 +261,14 @@ local function getViewportProfile()
 	local profile = {
 		Name = "desktop",
 		Columns = 2,
-		WindowWidth = clamp(viewport.X * 0.42, 560, 760),
-		WindowHeight = clamp(viewport.Y * 0.80, 560, 860),
-		HeaderHeight = 58,
-		TabHeight = 40,
+		WindowWidth = clamp(viewport.X * 0.40, 520, 720),
+		WindowHeight = clamp(viewport.Y * 0.76, 520, 820),
+		HeaderHeight = 54,
+		TabHeight = 36,
 		ControlText = 12,
 		TitleText = 18,
-		Corner = 12,
-		Padding = 16,
+		Corner = 11,
+		Padding = 14,
 		OpenButtonWidth = 116,
 		OpenButtonHeight = 44,
 	}
@@ -274,29 +276,29 @@ local function getViewportProfile()
 	if shortEdge <= 540 or touchPreferred and viewport.X <= 900 then
 		profile.Name = "phone"
 		profile.Columns = 1
-		profile.WindowWidth = clamp(viewport.X * 0.92, 300, 440)
-		profile.WindowHeight = clamp(viewport.Y * 0.84, 440, 760)
-		profile.HeaderHeight = 54
-		profile.TabHeight = 38
+		profile.WindowWidth = clamp(viewport.X * 0.90, 300, 420)
+		profile.WindowHeight = clamp(viewport.Y * 0.80, 420, 720)
+		profile.HeaderHeight = 50
+		profile.TabHeight = 36
 		profile.ControlText = 12
 		profile.TitleText = 16
 		profile.Corner = 10
-		profile.Padding = 14
-		profile.OpenButtonWidth = 104
-		profile.OpenButtonHeight = 42
+		profile.Padding = 12
+		profile.OpenButtonWidth = 100
+		profile.OpenButtonHeight = 40
 	elseif shortEdge <= 900 or viewport.X <= 1180 then
 		profile.Name = "tablet"
 		profile.Columns = 2
-		profile.WindowWidth = clamp(viewport.X * 0.72, 460, 700)
-		profile.WindowHeight = clamp(viewport.Y * 0.82, 500, 820)
-		profile.HeaderHeight = 56
-		profile.TabHeight = 40
+		profile.WindowWidth = clamp(viewport.X * 0.68, 450, 660)
+		profile.WindowHeight = clamp(viewport.Y * 0.78, 480, 780)
+		profile.HeaderHeight = 52
+		profile.TabHeight = 38
 		profile.ControlText = 12
 		profile.TitleText = 17
 		profile.Corner = 11
-		profile.Padding = 15
-		profile.OpenButtonWidth = 112
-		profile.OpenButtonHeight = 43
+		profile.Padding = 14
+		profile.OpenButtonWidth = 108
+		profile.OpenButtonHeight = 42
 	end
 
 	return profile
@@ -688,6 +690,21 @@ function Window:_makeAutoFlag(tabTitle, sectionTitle, itemTitle)
 		sanitizeFlag(itemTitle),
 		tostring(self._autoFlagIndex),
 	}, "_")
+end
+
+function Window:_keepSettingsTabLast()
+	if not self.DefaultSettingsTab or not self.DefaultSettingsTab.Button then
+		return
+	end
+
+	local maxOrder = 0
+	for _, tab in ipairs(self.Tabs) do
+		if tab ~= self.DefaultSettingsTab and tab.Button then
+			maxOrder = math.max(maxOrder, tab.Button.LayoutOrder)
+		end
+	end
+
+	self.DefaultSettingsTab.Button.LayoutOrder = maxOrder + 1
 end
 
 function Window:RegisterFlag(flag, getter, setter)
@@ -1277,8 +1294,6 @@ function Section:AddButton(options)
 	bindPressAnimation(button)
 
 	createTextLabel(button, UDim2.new(1, -24, 1, 0), UDim2.new(0, 12, 0, 0), config.Title or "Button", Enum.Font.GothamMedium, self.Window.Profile.ControlText, self.Window.Theme.Text)
-	local arrow = createTextLabel(button, UDim2.new(0, 16, 1, 0), UDim2.new(1, -20, 0, 0), ">", Enum.Font.GothamBold, 14, self.Window.Theme.Accent, Enum.TextXAlignment.Center)
-	arrow.Name = "Arrow"
 
 	button.MouseButton1Click:Connect(function()
 		tween(button, 0.12, {BackgroundColor3 = self.Window.Theme.ControlAlt}, Enum.EasingStyle.Quad)
@@ -1847,6 +1862,20 @@ function Window:CreateDefaultSettingsTab(options)
 		UpdatedText = nil,
 	}, options or {})
 
+	if self.DefaultSettingsTab then
+		if config.FooterUrl then
+			self:SetFooterUrl(config.FooterUrl)
+		end
+		if config.UpdatedText then
+			self:SetUpdatedText(config.UpdatedText)
+		end
+		if config.PresenceBaseUrl and config.PresenceBaseUrl ~= "" then
+			self:UsePresenceService(config.PresenceBaseUrl, config.PresenceScriptId, config.PresenceInterval)
+		end
+		self:_keepSettingsTabLast()
+		return self.DefaultSettingsTab
+	end
+
 	if config.FooterUrl then
 		self:SetFooterUrl(config.FooterUrl)
 	end
@@ -1860,7 +1889,10 @@ function Window:CreateDefaultSettingsTab(options)
 	local settingsTab = self:CreateTab({
 		Title = config.Title,
 		Accent = config.Accent,
+		IsDefaultSettings = true,
 	})
+	self.DefaultSettingsTab = settingsTab
+	self:_keepSettingsTabLast()
 
 	local desktopSection = settingsTab:CreateSection({
 		Title = "Desktop",
@@ -2267,32 +2299,32 @@ function Section:AddTextbox(options)
 
 	local holder = create("Frame", {
 		Parent = self.Content,
-		BackgroundColor3 = self.Window.Theme.Control,
-		Size = UDim2.new(1, 0, 0, config.Description and 74 or 58),
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, config.Description and 58 or 42),
 	})
-	applyCorner(holder, 10)
-	applyStroke(holder, self.Window.Theme.Stroke, 1, 0.2)
-	applyPadding(holder, 12, 12, 10, 10)
 
-	createTextLabel(holder, UDim2.new(1, 0, 0, 18), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.GothamMedium, self.Window.Profile.ControlText, self.Window.Theme.Text)
+	createTextLabel(holder, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 0, 0), config.Title, Enum.Font.GothamMedium, self.Window.Profile.ControlText, self.Window.Theme.Text)
 	if config.Description then
-		createTextLabel(holder, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 0, 18), config.Description, Enum.Font.Gotham, 12, self.Window.Theme.SubText)
+		createTextLabel(holder, UDim2.new(1, 0, 0, 14), UDim2.new(0, 0, 0, 16), config.Description, Enum.Font.Gotham, 11, self.Window.Theme.SubText)
 	end
 
 	local box = create("TextBox", {
 		Parent = holder,
-		BackgroundColor3 = self.Window.Theme.ControlAlt,
-		Position = UDim2.new(0, 0, 0, config.Description and 42 or 26),
-		Size = UDim2.new(1, 0, 0, 24),
+		BackgroundColor3 = self.Window.Theme.Control,
+		Position = UDim2.new(0, 0, 0, config.Description and 30 or 18),
+		Size = UDim2.new(1, 0, 0, 26),
 		Text = config.Default,
 		PlaceholderText = config.Placeholder,
 		Font = Enum.Font.Gotham,
 		TextSize = 13,
 		TextColor3 = self.Window.Theme.Text,
 		PlaceholderColor3 = self.Window.Theme.SubText,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Center,
 		ClearTextOnFocus = config.ClearOnFocus,
 	})
-	applyCorner(box, 7)
+	applyCorner(box, 8)
+	applyStroke(box, self.Window.Theme.Stroke, 1, 0.2)
 	applyPadding(box, 10, 10, 0, 0)
 
 	local api = {}
@@ -2722,6 +2754,8 @@ function Window:CreateTab(options)
 	local config = merge({
 		Title = "Tab",
 		Accent = self.Theme.Accent,
+		SelectOnCreate = nil,
+		IsDefaultSettings = false,
 	}, options or {})
 
 	local tab = setmetatable({}, Tab)
@@ -2811,8 +2845,21 @@ function Window:CreateTab(options)
 	end)
 
 	table.insert(self.Tabs, tab)
+	self._tabCreateIndex = (self._tabCreateIndex or 0) + 1
+	tab.Button.LayoutOrder = self._tabCreateIndex
 
-	if not self.ActiveTab then
+	if config.IsDefaultSettings then
+		self.DefaultSettingsTab = tab
+	end
+
+	self:_keepSettingsTabLast()
+
+	local shouldSelect = config.SelectOnCreate
+	if shouldSelect == nil then
+		shouldSelect = (not self.ActiveTab) or (self.ActiveTab == self.DefaultSettingsTab and not config.IsDefaultSettings)
+	end
+
+	if shouldSelect then
 		self:SelectTab(tab)
 	else
 		self:_updateTabStyles()
@@ -2836,6 +2883,7 @@ function Cloudy.new(options)
 	self.ShowDesktopOpenButton = config.ShowDesktopOpenButton and true or false
 	self.ShowMobileOpenButton = config.ShowMobileOpenButton ~= false
 	self.ToggleKeybind = resolveKeyCode(config.ToggleKeybind) or Enum.KeyCode.RightShift
+	self.AutoCreateSettingsTab = config.AutoCreateSettingsTab ~= false
 	self.IsOpen = true
 
 	self.Gui = create("ScreenGui", {
@@ -3109,6 +3157,10 @@ function Cloudy.new(options)
 
 	if workspace.CurrentCamera then
 		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshOnViewportChange)
+	end
+
+	if self.AutoCreateSettingsTab then
+		self:CreateDefaultSettingsTab(config.SettingsTab)
 	end
 
 	self:_updateResponsiveLayout()

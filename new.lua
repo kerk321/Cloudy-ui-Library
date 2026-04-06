@@ -328,7 +328,7 @@ local function bindPressAnimation(button, scaleObject)
 
 	local function setScale(value)
 		if target:IsA("UIScale") then
-			tween(target, 0.08, {Scale = value}, Enum.EasingStyle.Quad)
+			target.Scale = value
 		end
 	end
 
@@ -522,6 +522,23 @@ Tab.__index = Tab
 local Section = {}
 Section.__index = Section
 
+-- Shared single InputChanged + InputEnded connection for all drag operations.
+-- Only one drag can ever be active at a time (one mouse/touch pointer).
+local _currentDragMove = nil
+local _currentDragEnd = nil
+UserInputService.InputChanged:Connect(function(input)
+	if _currentDragMove and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		_currentDragMove(input.Position)
+	end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if _currentDragEnd and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		_currentDragEnd()
+		_currentDragMove = nil
+		_currentDragEnd = nil
+	end
+end)
+
 local function makeInteractiveRow(section, title, subtitle, height)
 	local rowHeight = height or CONTROL_HEIGHT
 	local row = create("Frame", {
@@ -563,8 +580,8 @@ end
 
 function Window:_applyTheme()
 	self.Window.BackgroundColor3 = self.Theme.Surface
-	self.Header.BackgroundColor3 = self.Theme.SurfaceAlt
-	self.HeaderFill.BackgroundColor3 = self.Theme.SurfaceAlt
+	self.Header.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	self.HeaderFill.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	self.HeaderDivider.BackgroundColor3 = self.Theme.Stroke
 	self.TabBar.BackgroundColor3 = self.Theme.Background
 	self.TabBarFrame.BackgroundColor3 = self.Theme.Background
@@ -605,13 +622,14 @@ end
 function Window:_updateTabStyles()
 	for _, tab in ipairs(self.Tabs) do
 		local selected = self.ActiveTab == tab
-		tab.Button.BackgroundColor3 = selected and self.Theme.TabActive or self.Theme.TabIdle
-		tab.Button.BackgroundTransparency = 0
+		tab.Button.BackgroundColor3 = selected and self.Theme.Control or self.Theme.Background
+		tab.Button.BackgroundTransparency = selected and 0 or 1
 		tab.ButtonText.TextColor3 = selected and self.Theme.Text or self.Theme.SubText
+		tab.ButtonText.Font = selected and Enum.Font.GothamSemibold or Enum.Font.Gotham
 		tab.ButtonIndicator.BackgroundColor3 = self.Theme.Accent
 		tab.ButtonIndicator.Visible = false
-		tab.ButtonStroke.Color = self.Theme.Stroke
-		tab.ButtonStroke.Transparency = selected and 0.18 or 0.52
+		tab.ButtonStroke.Color = self.Theme.Accent
+		tab.ButtonStroke.Transparency = selected and 0.15 or 1
 		tab.Page.Visible = selected
 		tab.AccentDot.Visible = false
 	end
@@ -965,18 +983,14 @@ end
 function Window:SetOpen(isOpen)
 	self.IsOpen = isOpen
 	self:_updateOpenButtonVisibility()
-	self.SnowLayer.Visible = isOpen
 
 	if isOpen then
 		self.Window.Visible = true
 		self.WindowShadow.Visible = false
-		self.Window.GroupTransparency = 0
-		self.WindowScale.Scale = 1
 		self.Window.Position = UDim2.new(0.5, 0, 0.5, 0)
 		self.OpenButtonText.Text = "Close"
 	else
 		self.OpenButtonText.Text = "Open"
-		self.Window.GroupTransparency = 1
 		self.Window.Visible = false
 	end
 end
@@ -1357,10 +1371,10 @@ function Section:AddButton(options)
 	createTextLabel(button, UDim2.new(1, -24, 1, 0), UDim2.new(0, 12, 0, 0), config.Title or "Button", Enum.Font.GothamMedium, self.Window.Profile.ControlText, self.Window.Theme.Text)
 
 	button.MouseButton1Click:Connect(function()
-		tween(button, 0.12, {BackgroundColor3 = self.Window.Theme.ControlAlt}, Enum.EasingStyle.Quad)
-		task.delay(0.12, function()
+		button.BackgroundColor3 = self.Window.Theme.ControlAlt
+		task.delay(0.1, function()
 			if button.Parent then
-				tween(button, 0.14, {BackgroundColor3 = self.Window.Theme.Control}, Enum.EasingStyle.Quad)
+				button.BackgroundColor3 = self.Window.Theme.Control
 			end
 		end)
 		if config.Callback then
@@ -1624,6 +1638,12 @@ function Section:AddToggle(options)
 			end
 			draggingSat = true
 			updateSat(input.Position)
+			_currentDragMove = function(position)
+				updateSat(position)
+			end
+			_currentDragEnd = function()
+				draggingSat = false
+			end
 		end)
 		satArea.InputEnded:Connect(function(input)
 			if isPrimaryInput(input) then
@@ -1636,20 +1656,16 @@ function Section:AddToggle(options)
 			end
 			draggingHue = true
 			updateHue(input.Position)
+			_currentDragMove = function(position)
+				updateHue(position)
+			end
+			_currentDragEnd = function()
+				draggingHue = false
+			end
 		end)
 		hueBar.InputEnded:Connect(function(input)
 			if isPrimaryInput(input) then
 				draggingHue = false
-			end
-		end)
-		UserInputService.InputChanged:Connect(function(input)
-			if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
-				return
-			end
-			if draggingSat then
-				updateSat(input.Position)
-			elseif draggingHue then
-				updateHue(input.Position)
 			end
 		end)
 		UserInputService.InputBegan:Connect(function(input)
@@ -1671,12 +1687,8 @@ function Section:AddToggle(options)
 	local boundKey = resolveKeyCode(config.Key)
 
 	local function render()
-		tween(toggleBox, 0.12, {
-			BackgroundColor3 = state and self.Window.Theme.Accent or self.Window.Theme.ControlAlt,
-		}, Enum.EasingStyle.Quad)
-		tween(fill, 0.12, {
-			BackgroundTransparency = state and 0 or 1,
-		}, Enum.EasingStyle.Quad)
+		toggleBox.BackgroundColor3 = state and self.Window.Theme.Accent or self.Window.Theme.ControlAlt
+		fill.BackgroundTransparency = state and 0 or 1
 		toggleStroke.Color = state and self.Window.Theme.Accent or self.Window.Theme.Stroke
 		check.Text = state and "" or ""
 		if subtitleLabel then
@@ -1900,25 +1912,16 @@ function Section:AddSlider(options)
 		end
 		dragging = true
 		setFromInput(input.Position.X, true)
+		_currentDragMove = function(position)
+			setFromInput(position.X, true)
+		end
+		_currentDragEnd = function()
+			dragging = false
+		end
 	end
 
 	hitbox.InputBegan:Connect(beginDrag)
 	track.InputBegan:Connect(beginDrag)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if not dragging then
-			return
-		end
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			setFromInput(input.Position.X, true)
-		end
-	end)
-
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
-		end
-	end)
 
 	renderValue(false, true)
 	self.Window:RegisterFlag(flag, function()
@@ -2242,7 +2245,7 @@ function Section:AddDropdown(options)
 		BackgroundColor3 = self.Window.Theme.ControlAlt,
 		Size = UDim2.fromOffset(220, 0),
 		Visible = false,
-		ZIndex = 40,
+		ZIndex = 50,
 	})
 	applyCorner(list, 8)
 	applyStroke(list, self.Window.Theme.Stroke, 1, 0.15)
@@ -2255,7 +2258,7 @@ function Section:AddDropdown(options)
 		CanvasSize = UDim2.new(0, 0, 0, 0),
 		ScrollBarThickness = 2,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
-		ZIndex = 41,
+		ZIndex = 51,
 	})
 	local listLayout = addListLayout(scroll, 4)
 
@@ -2291,26 +2294,26 @@ function Section:AddDropdown(options)
 		end
 	end
 
-	for _, value in ipairs(config.Values) do
-		local item = create("TextButton", {
-			Parent = scroll,
-			BackgroundColor3 = self.Window.Theme.Control,
-			Size = UDim2.new(1, 0, 0, 28),
-			Text = tostring(value),
-			Font = Enum.Font.Gotham,
-			TextSize = 12,
-			TextColor3 = self.Window.Theme.Text,
-			AutoButtonColor = false,
-			ZIndex = 41,
-		})
-		applyCorner(item, 6)
-		item.TextXAlignment = Enum.TextXAlignment.Left
-		applyPadding(item, 8, 8, 0, 0)
-		item.MouseButton1Click:Connect(function()
-			selectValue(value)
-			setExpanded(false)
-		end)
-	end
+		for _, value in ipairs(config.Values) do
+			local item = create("TextButton", {
+				Parent = scroll,
+				BackgroundColor3 = self.Window.Theme.Control,
+				Size = UDim2.new(1, 0, 0, 28),
+				Text = tostring(value),
+				Font = Enum.Font.Gotham,
+				TextSize = 12,
+				TextColor3 = self.Window.Theme.Text,
+				AutoButtonColor = false,
+				ZIndex = 51,
+			})
+			applyCorner(item, 6)
+			item.TextXAlignment = Enum.TextXAlignment.Left
+			applyPadding(item, 8, 8, 0, 0)
+			item.MouseButton1Click:Connect(function()
+				selectValue(value)
+				setExpanded(false)
+			end)
+		end
 
 	top.MouseButton1Click:Connect(function()
 		setExpanded(not expanded)
@@ -2356,7 +2359,7 @@ function Section:AddDropdown(options)
 				TextSize = 12,
 				TextColor3 = section.Window.Theme.Text,
 				AutoButtonColor = false,
-				ZIndex = 41,
+				ZIndex = 51,
 			})
 			applyCorner(item, 6)
 			item.TextXAlignment = Enum.TextXAlignment.Left
@@ -2763,6 +2766,12 @@ function Section:AddColorPicker(options)
 		end
 		draggingSat = true
 		updateSaturationValue(input.Position)
+		_currentDragMove = function(position)
+			updateSaturationValue(position)
+		end
+		_currentDragEnd = function()
+			draggingSat = false
+		end
 	end)
 
 	satArea.InputEnded:Connect(function(input)
@@ -2777,22 +2786,17 @@ function Section:AddColorPicker(options)
 		end
 		draggingHue = true
 		updateHue(input.Position)
+		_currentDragMove = function(position)
+			updateHue(position)
+		end
+		_currentDragEnd = function()
+			draggingHue = false
+		end
 	end)
 
 	hueBar.InputEnded:Connect(function(input)
 		if isPrimaryInput(input) then
 			draggingHue = false
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
-			return
-		end
-		if draggingSat then
-			updateSaturationValue(input.Position)
-		elseif draggingHue then
-			updateHue(input.Position)
 		end
 	end)
 
@@ -3037,18 +3041,13 @@ function Cloudy.new(options)
 	applyStroke(self.OpenButton, Color3.fromRGB(26, 28, 38), 1, 0)
 	self.OpenButtonText = createTextLabel(self.OpenButton, UDim2.new(1, 0, 1, 0), UDim2.new(), config.Open and "Close" or "Open", Enum.Font.GothamMedium, 13, self.Theme.Text, Enum.TextXAlignment.Center)
 
-	self.Window = create("CanvasGroup", {
+	self.Window = create("Frame", {
 		Parent = self.Gui,
 		Name = "Window",
 		BackgroundColor3 = self.Theme.Surface,
 		Size = UDim2.fromOffset(self.Profile.WindowWidth, self.Profile.WindowHeight),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
-		GroupTransparency = 0,
-	})
-	self.WindowScale = create("UIScale", {
-		Parent = self.Window,
-		Scale = 1,
 	})
 	self.WindowShadow = create("ImageLabel", {
 		Parent = self.Gui,
@@ -3068,7 +3067,7 @@ function Cloudy.new(options)
 
 	self.Header = create("Frame", {
 		Parent = self.Window,
-		BackgroundColor3 = self.Theme.SurfaceAlt,
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
 		Size = UDim2.new(1, 0, 0, self.Profile.HeaderHeight),
 	})
@@ -3085,6 +3084,7 @@ function Cloudy.new(options)
 	self.HeaderDivider = create("Frame", {
 		Parent = self.Header,
 		BackgroundColor3 = self.Theme.Stroke,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, self.Profile.Padding, 1, -1),
 		Size = UDim2.new(1, -(self.Profile.Padding * 2), 0, 1),
@@ -3121,7 +3121,7 @@ function Cloudy.new(options)
 
 	self.TabBar = create("Frame", {
 		Parent = self.Window,
-		BackgroundColor3 = self.Theme.SurfaceAlt,
+		BackgroundColor3 = self.Theme.Background,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0, self.Profile.HeaderHeight),
 		Size = UDim2.new(1, 0, 0, self.Profile.TabHeight),
@@ -3138,6 +3138,7 @@ function Cloudy.new(options)
 	self.TabDivider = create("Frame", {
 		Parent = self.TabBar,
 		BackgroundColor3 = self.Theme.Stroke,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, self.Profile.Padding, 1, 0),
 		Size = UDim2.new(1, -(self.Profile.Padding * 2), 0, 1),
@@ -3238,7 +3239,7 @@ function Cloudy.new(options)
 		Parent = self.Gui,
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
-		ZIndex = 35,
+		ZIndex = 45,
 	})
 
 	self.NotificationHolder = create("Frame", {
@@ -3272,7 +3273,6 @@ function Cloudy.new(options)
 	self:SetUpdatedText("Apr 5 2026")
 	self:_enableDragging()
 	self:_enableOpenButtonDragging()
-	self:_startSnow()
 
 	local function refreshOnViewportChange()
 		self:_updateResponsiveLayout()

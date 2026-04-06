@@ -1744,25 +1744,32 @@ function Section:AddToggle(options)
 		api:Set(not state)
 	end)
 
+	local _tapStartPos = nil
 	row.InputBegan:Connect(function(input)
 		if isPrimaryInput(input) then
-			local position = input.Position
-			if keyChip then
-				local insideKeyX = position.X >= keyChip.AbsolutePosition.X and position.X <= (keyChip.AbsolutePosition.X + keyChip.AbsoluteSize.X)
-				local insideKeyY = position.Y >= keyChip.AbsolutePosition.Y and position.Y <= (keyChip.AbsolutePosition.Y + keyChip.AbsoluteSize.Y)
-				if insideKeyX and insideKeyY then
-					return
-				end
-			end
-			if colorChip then
-				local insideColorX = position.X >= colorChip.AbsolutePosition.X and position.X <= (colorChip.AbsolutePosition.X + colorChip.AbsoluteSize.X)
-				local insideColorY = position.Y >= colorChip.AbsolutePosition.Y and position.Y <= (colorChip.AbsolutePosition.Y + colorChip.AbsoluteSize.Y)
-				if insideColorX and insideColorY then
-					return
-				end
-			end
-			api:Set(not state)
+			_tapStartPos = input.Position
 		end
+	end)
+	row.InputEnded:Connect(function(input)
+		if not isPrimaryInput(input) then return end
+		if not _tapStartPos then return end
+		local dx = math.abs(input.Position.X - _tapStartPos.X)
+		local dy = math.abs(input.Position.Y - _tapStartPos.Y)
+		_tapStartPos = nil
+		-- Only fire if finger/cursor didn't drift (not a scroll/drag)
+		if dx > 10 or dy > 10 then return end
+		local position = input.Position
+		if keyChip then
+			local insideKeyX = position.X >= keyChip.AbsolutePosition.X and position.X <= (keyChip.AbsolutePosition.X + keyChip.AbsoluteSize.X)
+			local insideKeyY = position.Y >= keyChip.AbsolutePosition.Y and position.Y <= (keyChip.AbsolutePosition.Y + keyChip.AbsoluteSize.Y)
+			if insideKeyX and insideKeyY then return end
+		end
+		if colorChip then
+			local insideColorX = position.X >= colorChip.AbsolutePosition.X and position.X <= (colorChip.AbsolutePosition.X + colorChip.AbsoluteSize.X)
+			local insideColorY = position.Y >= colorChip.AbsolutePosition.Y and position.Y <= (colorChip.AbsolutePosition.Y + colorChip.AbsoluteSize.Y)
+			if insideColorX and insideColorY then return end
+		end
+		api:Set(not state)
 	end)
 
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
